@@ -1,0 +1,38 @@
+{
+    "name": "andrewlamers/laravel-advanced-console",
+    "description": "Advanced console interface",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "console"
+    ],
+    "authors": [
+        {
+            "name": "Andrew Lamers",
+            "email": "andrew.lamers@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "illuminate/console": "^5.4",
+        "illuminate/database": "^5.4",
+        "illuminate/events": "^5.4",
+        "illuminate/config": "^5.4",
+        "illuminate/support": "^5.4",
+        "illuminate/mail": "^5.4",
+        "symfony/process": "~4.0",
+        "symfony/console": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Andrewlamers\\LaravelAdvancedConsole\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Andrewlamers\\LaravelAdvancedConsole\\LaravelAdvancedConsoleServiceProvider"
+            ]
+        }
+    }
+}
