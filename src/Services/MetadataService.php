@@ -28,6 +28,7 @@ class MetadataService extends Service
         $metadata = $this->formatMetadata();
 
         foreach ($metadata as $data) {
+
             if (isset($data['title'])) {
                 $this->command->header($data['title']);
             }
@@ -147,9 +148,14 @@ class MetadataService extends Service
             ->add('UID', $this->getUID())
             ->add('GID', $this->getGID())
             ->add('PID', $this->getPID())
-            ->add('Inode', $this->getInode())
-            ->add('Git Branch', sprintf('%s (%s) on %s', $this->getGitBranch(), $this->getGitCommitHash(), $this->getGitCommitDate()))
-            ->add('Git Committer', sprintf('%s (%s)', $this->getGitCommitterName(), $this->getGitCommitterEmail()));
+            ->add('Inode', $this->getInode());
+
+        if($this->isGitRepo()) {
+            $this->add('Git Branch', sprintf('%s (%s) on %s', $this->getGitBranch(), $this->getGitCommitHash(), $this->getGitCommitDate()))
+                ->add('Git Committer', sprintf('%s (%s)', $this->getGitCommitterName(), $this->getGitCommitterEmail()));
+        } else {
+            $this->add('Git: ', 'Not a git repository');
+        }
 
         if(method_exists($this, 'getLogFullPath')) {
             $this->add('Logging Output To: ', $this->getLogFullPath());

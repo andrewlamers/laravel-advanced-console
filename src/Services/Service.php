@@ -196,24 +196,38 @@ abstract class Service
         return getmyinode();
     }
 
+    public function isGitRepo() {
+        $result = $this->runProcess('git --git-dir=home status');
+
+        if(str_contains($result, 'fatal')) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function getGitBranch() {
-        return $this->runProcess('git --git-dir={getPath}/.git rev-parse --abbrev-ref HEAD');
+        return $this->runProcess('git --exec-path={getPath} rev-parse --abbrev-ref HEAD');
     }
 
     public function getGitCommitHash() {
-        return $this->runProcess('git --git-dir={getPath}/.git log --pretty="%H" -n1 HEAD');
+        return $this->runProcess('git --exec-path={getPath} log --pretty="%H" -n1 HEAD');
     }
 
     public function getGitCommitDate() {
-        return Carbon::parse($this->runProcess('git --git-dir={getPath}/.git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
+        try {
+            return Carbon::parse($this->runProcess('git --exec-path={getPath} log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
+        } catch(\Exception $e) {
+            return null;
+        }
     }
 
     public function getGitCommitterName() {
-        return $this->runProcess('git --git-dir={getPath}/.git log --pretty="%an" -n1 HEAD');
+        return $this->runProcess('git --exec-path={getPath} log --pretty="%an" -n1 HEAD');
     }
 
     public function getGitCommitterEmail() {
-        return $this->runProcess('git --git-dir={getPath}/.git log --pretty="%ae" -n1 HEAD');
+        return $this->runProcess('git --exec-path={getPath} log --pretty="%ae" -n1 HEAD');
     }
 
     public function getAppDebug() {

@@ -265,7 +265,7 @@ abstract class Command extends BaseCommand
     }
 
     public function header($message) {
-        $this->output->writeln(sprintf('<fg=cyan;bg=default>%s</>', $message), null);
+        $this->output->writeln(sprintf('<fg=cyan;bg=default>%s</>', $message));
     }
 
     public function listing($elements) {
