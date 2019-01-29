@@ -197,7 +197,7 @@ abstract class Service
     }
 
     public function isGitRepo() {
-        $result = $this->runProcess('git --git-dir=home status');
+        $result = $this->runProcess('git -C {getPath} status');
 
         if(str_contains($result, 'fatal')) {
             return false;
@@ -207,27 +207,27 @@ abstract class Service
     }
 
     public function getGitBranch() {
-        return $this->runProcess('git --exec-path={getPath} rev-parse --abbrev-ref HEAD');
+        return $this->runProcess('git -C {getPath} rev-parse --abbrev-ref HEAD');
     }
 
     public function getGitCommitHash() {
-        return $this->runProcess('git --exec-path={getPath} log --pretty="%H" -n1 HEAD');
+        return $this->runProcess('git -C {getPath} log --pretty="%H" -n1 HEAD');
     }
 
     public function getGitCommitDate() {
         try {
-            return Carbon::parse($this->runProcess('git --exec-path={getPath} log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
+            return Carbon::parse($this->runProcess('git -C {getPath} log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
         } catch(\Exception $e) {
             return null;
         }
     }
 
     public function getGitCommitterName() {
-        return $this->runProcess('git --exec-path={getPath} log --pretty="%an" -n1 HEAD');
+        return $this->runProcess('git -C {getPath} log --pretty="%an" -n1 HEAD');
     }
 
     public function getGitCommitterEmail() {
-        return $this->runProcess('git --exec-path={getPath} log --pretty="%ae" -n1 HEAD');
+        return $this->runProcess('git -C {getPath} log --pretty="%ae" -n1 HEAD');
     }
 
     public function getAppDebug() {
