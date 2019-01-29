@@ -145,7 +145,7 @@ abstract class Command extends BaseCommand
         $error = error_get_last();
 
         if($error) {
-            $this->model->fail();
+            $this->commandHistory->getModel()->fail();
         }
 
         $this->commandHistory->saveOutput();
