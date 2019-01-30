@@ -201,7 +201,7 @@ abstract class Service
     }
 
     public function isGitRepo() {
-        $result = $this->runProcess('git -C {getPath} status');
+        $result = $this->runProcess('git status');
 
         if(str_contains($result, 'fatal')) {
             return false;

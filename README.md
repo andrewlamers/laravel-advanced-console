@@ -37,3 +37,15 @@ Since the lock is acquired by the command history table, and by process id
 it is a more reliable lock that doesnt get stuck locked if the command has a fatal error
 
 #### Command Execution History
+Enabled by default.
+Disabled by setting
+
+`
+    $enableCommandHistory = false;
+`
+
+Stores a history of all commands run through the CLI into a database table with metadata 
+and output. This is also where process locks will be obtained from.
+This makes debugging and monitoring much easier when you have a large amount of unattended commands 
+running on intervals. 
+
