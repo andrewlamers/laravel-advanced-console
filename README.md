@@ -2,12 +2,38 @@
 Extension of Illuminate console command to add debugging and other utilities for more verbose
 console programs.
 
-Adds timestamps, memory usage, and execution time to end of program and on each line
-sent to output.
 
-Can profile SQL Statements used through laravels database log
-Stores executed commands to a history table with output and execution times
-Can set locks on commands to prevent running programmings from overlapping, since it goes off
-the database and checks the process id to see if its actually still running it is more 
-reliable than laravels mutex lock. 
+#### Benchmarks
 
+Outputs current time, memory usage, ms since command start and line type with each line
+in the output.
+
+    [2019-01-30 12:14:52][470ms][17.6MB][DEBUG] Starting command
+
+#### Database Profile
+
+
+#### Formatted Output Lines
+
+
+#### Metadata
+Outputs information about the running environment the command was executed in,
+as well as database and other configuration that would be useful when debugging commands that 
+run on a schedule
+
+     * Location                            : /composer-packages/test
+     * Host                                : 127.0.0.1
+     * PHP Version                         : 7.2.9
+     * Memory Limit                        : 256M
+     * Time Limit                          : 300
+     * Environment                         : local
+     * App Debug                           : True
+
+
+#### Process Lock Mutex
+
+Commands can be locked to prevent executions overlapping.
+Since the lock is acquired by the command history table, and by process id
+it is a more reliable lock that doesnt get stuck locked if the command has a fatal error
+
+#### Command Execution History

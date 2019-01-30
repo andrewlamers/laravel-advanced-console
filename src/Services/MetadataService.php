@@ -8,7 +8,6 @@
 
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
-
 use Andrewlamers\LaravelAdvancedConsole\Command;
 
 class MetadataService extends Service
@@ -115,9 +114,17 @@ class MetadataService extends Service
                     }
 
                     if (strlen($data['name']) > 0) {
-                        $data['name'] = sprintf('<info>%-34s</info>: ', $data['name']);
+                        $data['name'] = sprintf('<info>%-36s</info>: ', $data['name']);
                     } else {
                         $data['value'] = sprintf('<comment>%s</comment>', $data['value']);
+                    }
+
+                    if($data['value'] === 'Enabled') {
+                        $data['value'] = sprintf('<info>%s</info>', $data['value']);
+                    }
+
+                    if($data['value'] === 'Disabled') {
+                        $data['value'] = sprintf('<fg=red;bg=default>%s</>', $data['value']);
                     }
 
                     $line = sprintf('%s%s', $data['name'], $data['value']);
@@ -131,7 +138,7 @@ class MetadataService extends Service
     }
 
     public function getGitInfo() {
-        return sprintf('%s: %s (%s) by %s (%s)', $this->getGitBranch(), $this->getGitCommitHash(),
+        return sprintf('%s: %s (%s)', $this->getGitBranch(), $this->getGitCommitHash(),
             $this->getGitCommitDate());
     }
 
@@ -151,8 +158,10 @@ class MetadataService extends Service
             ->add('Inode', $this->getInode());
 
         if($this->isGitRepo()) {
-            $this->add('Git Branch', sprintf('%s (%s) on %s', $this->getGitBranch(), $this->getGitCommitHash(), $this->getGitCommitDate()))
-                ->add('Git Committer', sprintf('%s (%s)', $this->getGitCommitterName(), $this->getGitCommitterEmail()));
+            $this->add('Git Branch', sprintf('%s', $this->getGitBranch()))
+                ->add('Git Committer', sprintf('%s (%s)', $this->getGitCommitterName(), $this->getGitCommitterEmail()))
+                ->add('Last Commit Date',  $this->getGitCommitDate())
+                ->add('Last Commit', sprintf('%s', $this->getGitCommitMessage()));
         } else {
             $this->add('Git: ', 'Not a git repository');
         }

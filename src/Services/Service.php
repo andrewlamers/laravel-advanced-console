@@ -80,7 +80,7 @@ abstract class Service
         $this->application = $application;
     }
 
-    protected function runProcess($command) {
+    protected function runProcess($command, $path = null) {
         $matches = [];
 
         preg_match_all('/\{(?P<function>[a-zA-Z]+)\}/i', $command, $matches);
@@ -98,8 +98,12 @@ abstract class Service
             }
         }
 
+        if($path === null) {
+            $path = $this->getPath();
+        }
+
         $output = null;
-        $process = new Process($command);
+        $process = new Process($command, $path);
         $process->run();
 
         if ($process->isSuccessful()) {
@@ -207,27 +211,31 @@ abstract class Service
     }
 
     public function getGitBranch() {
-        return $this->runProcess('git -C {getPath} rev-parse --abbrev-ref HEAD');
+        return $this->runProcess('git rev-parse --abbrev-ref HEAD');
     }
 
     public function getGitCommitHash() {
-        return $this->runProcess('git -C {getPath} log --pretty="%H" -n1 HEAD');
+        return $this->runProcess('git log --pretty="%H" -n1 HEAD');
     }
 
     public function getGitCommitDate() {
         try {
-            return Carbon::parse($this->runProcess('git -C {getPath} log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
+            return Carbon::parse($this->runProcess('git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
         } catch(\Exception $e) {
             return null;
         }
     }
 
     public function getGitCommitterName() {
-        return $this->runProcess('git -C {getPath} log --pretty="%an" -n1 HEAD');
+        return $this->runProcess('git log --pretty="%an" -n1 HEAD');
     }
 
     public function getGitCommitterEmail() {
-        return $this->runProcess('git -C {getPath} log --pretty="%ae" -n1 HEAD');
+        return $this->runProcess('git log --pretty="%ae" -n1 HEAD');
+    }
+
+    public function getGitCommitMessage() {
+        return $this->runProcess('git log --pretty="%s" -n1 HEAD');
     }
 
     public function getAppDebug() {

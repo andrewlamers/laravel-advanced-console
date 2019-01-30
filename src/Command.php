@@ -364,7 +364,6 @@ abstract class Command extends BaseCommand
         $service = array_get($this->services, $serviceName, false);
 
         if($service) {
-
             return $service;
         }
 
