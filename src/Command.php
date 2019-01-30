@@ -13,6 +13,7 @@ use Andrewlamers\LaravelAdvancedConsole\Services\ProfileService;
 use Andrewlamers\LaravelAdvancedConsole\Services\Service;
 use Illuminate\Console\Command as BaseCommand;
 use Illuminate\Container\Container;
+use function PHPSTORM_META\type;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -250,7 +251,18 @@ abstract class Command extends BaseCommand
     }
 
     public function sprintLine($format, $args) {
+        $args = $this->cleanSprintArgs($args);
         return vsprintf($format, $args);
+    }
+
+    protected function cleanSprintArgs($args) {
+        foreach($args as $index => $arg) {
+            if(is_array($arg) || is_object($arg)) {
+                $args[$index] = json_encode($arg);
+            }
+        }
+
+        return $args;
     }
 
     public function line($string, $style = NULL, $verbosity = NULL)
