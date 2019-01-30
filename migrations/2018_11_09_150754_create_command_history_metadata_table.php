@@ -48,6 +48,6 @@ class CreateCommandHistoryMetadataTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('command_history_metadatas');
+        Schema::dropIfExists('command_history_metadata');
     }
 }
