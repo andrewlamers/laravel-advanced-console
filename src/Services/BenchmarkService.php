@@ -16,13 +16,14 @@ class BenchmarkService extends Service
      * @var Command $command
      */
     protected $command;
-    protected $templates = ['%timestamp%', '%elapsedMs%', '%memoryUsage%'];
+    protected $templates = ['%timestamp%', '%elapsedMs%', '%lastElapsedMs%', '%memoryUsage%'];
     protected $timestampFormat = 'Y-m-d h:i:s';
 
     protected $startTime;
     protected $endTime;
     protected $lastLineEnd;
     protected $end;
+    protected $lastElapsedTime = 0;
 
     public function initialize($input, $output) {
         parent::initialize($input, $output);
@@ -61,8 +62,21 @@ class BenchmarkService extends Service
         return $this->endTime - $this->startTime;
     }
 
+    public function getLastElapsedTime() {
+        if($this->lastElapsedTime === 0) {
+            $this->lastElapsedTime = $this->startTime;
+        }
+
+        $elapsed = microtime(true) - $this->lastElapsedTime;
+
+        $this->lastElapsedTime = microtime(true);
+
+        return $elapsed;
+    }
+
     public function formatNumber($number) {
-        return number_format($number * 1000, 0, '.', '');
+        $number = $number * 1000;
+        return number_format($number, 2, '.', '');
     }
 
     public function afterRun() {
@@ -87,17 +101,17 @@ class BenchmarkService extends Service
     }
 
     public function formatLine($line, $style, $verbosity) {
-        $line = '%timestamp%%elapsedMs%%memoryUsage%'.$line;
+        $line = '%timestamp%%lastElapsedMs%%memoryUsage%'.$line;
         $line = $this->formatTimestamp($line);
         return $line;
     }
 
     public function formatTimestamp($line) {
         $date = sprintf('[%s]', (new \DateTime('now'))->format($this->timestampFormat));
-        $elapsed = sprintf('[%sms]', $this->formatNumber($this->getElapsedTime()));
+        $elapsed = sprintf('[%sms]', $this->formatNumber($this->getLastElapsedTime()));
         $memory = sprintf('[%s]', $this->formatMemoryUsage());
 
-        return str_replace($this->templates, [$date, $elapsed, $memory], $line);
+        return str_replace($this->templates, [$date, null, $elapsed, $memory], $line);
     }
 
     public function setTimestampFormat($format) {

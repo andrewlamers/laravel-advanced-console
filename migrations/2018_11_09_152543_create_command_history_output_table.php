@@ -28,6 +28,6 @@ class CreateCommandHistoryOutputTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('command_history_outputs');
+        Schema::dropIfExists('command_history_output');
     }
 }
