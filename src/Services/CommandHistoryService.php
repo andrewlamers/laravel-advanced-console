@@ -46,11 +46,15 @@ class CommandHistoryService extends Service
     }
 
     public function setOutputCompressed() {
-        $conn = $this->model->output->getConnection();
-        $pdo = ($conn->getPdo());
-        $table = $this->model->output->getTable();
-        $stmt = $pdo->prepare('UPDATE ' . $table . ' SET `output` = COMPRESS(output) WHERE id = ?');
-        return $stmt->execute([$this->model->output->id]);
+        if($this->logOutput() && $this->compressOutput()) {
+            $conn = $this->model->output->getConnection();
+            $pdo = ($conn->getPdo());
+            $table = $this->model->output->getTable();
+            $stmt = $pdo->prepare('UPDATE ' . $table . ' SET `output` = COMPRESS(output) WHERE id = ?');
+            if(!$stmt->execute([$this->model->output->id])) {
+                throw new CommandHistoryOutputException('Error setting output compression.');
+            }
+        }
     }
 
     public function initialize($input, $output)

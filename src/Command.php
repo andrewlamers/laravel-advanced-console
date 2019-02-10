@@ -145,14 +145,13 @@ abstract class Command extends BaseCommand
         $this->clearMemoryBuffer();
         $error = error_get_last();
 
-        if($error) {
-            $this->commandHistory->getModel()->fail();
-        }
+        if($this->commandHistory->isEnabled()) {
+            if ($error) {
+                $this->commandHistory->getModel()->fail();
+            }
 
-        $this->commandHistory->saveOutput();
-
-        if(!$this->commandHistory->setOutputCompressed()) {
-            throw new CommandHistoryOutputException('Error setting output compression.');
+            $this->commandHistory->saveOutput();
+            $this->commandHistory->setOutputCompressed();
         }
     }
 
