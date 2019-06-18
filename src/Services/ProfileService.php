@@ -7,23 +7,22 @@ use Illuminate\Support\Facades\DB;
 
 class ProfileService extends Service
 {
-    protected $queryLog = [];
-    protected $queryTypes = [
+    /**
+     * @var Collection $queryLog;
+     */
+    protected $queryLog;
+
+    protected static $queryTypes = [
         'select' => ['select .* from .*'],
         'insert' => ['insert into (.*)'],
         'update' => ['update (.*) set .*'],
-        'delete' => ["delete from (.*)", 'update (.*) set .* deleted_at .*']
+        'delete' => ['delete from (.*)', 'update (.*) set .* deleted_at .*']
     ];
 
     protected $statementCounts = [];
     protected $totalQueryTime = [];
 
-    public function __construct(Command $command)
-    {
-        parent::__construct($command);
-    }
-
-    public function beforeExecute()
+    public function beforeExecute(): void
     {
         DB::listen(function($query) {
             $this->appendQueryLog($query);
@@ -32,7 +31,7 @@ class ProfileService extends Service
         $this->queryLog = new Collection();
     }
 
-    protected function appendQueryLog($query) {
+    protected function appendQueryLog($query): void {
 
         if($this->queryIsProfileable($query->sql)) {
 
@@ -47,7 +46,7 @@ class ProfileService extends Service
         }
     }
 
-    protected function incrementStatementCount($type, $count) {
+    protected function incrementStatementCount($type, $count): void {
         if(!isset($this->statementCounts[$type])) {
             $this->statementCounts[$type] = 0;
         }
@@ -60,7 +59,7 @@ class ProfileService extends Service
         return array_get($matches, 'type', null);
     }
 
-    protected function queryIsProfileable($sql) {
+    protected function queryIsProfileable($sql): bool {
         if(preg_match('/(command_histories|command_history_output|command_history_metadata)/', $sql)) {
             return false;
         }
@@ -68,11 +67,11 @@ class ProfileService extends Service
         return true;
     }
 
-    protected function outputProfileTable() {
+    protected function outputProfileTable(): void {
         $this->command->header('Database Profile');
         $row = [];
 
-        $types = $this->queryLog->groupBy("type");
+        $types = $this->queryLog->groupBy('type');
 
         foreach($types as $type => $statements) {
             $row[$type] = $statements->count() . ' (' . $statements->sum('time') . 'ms)';
@@ -85,7 +84,7 @@ class ProfileService extends Service
         }
     }
 
-    protected function outputQueries() {
+    protected function outputQueries(): void {
 
         $queries = $this->queryLog->groupBy('sql');
 
@@ -105,7 +104,7 @@ class ProfileService extends Service
         $this->command->table($header, $arr);
     }
 
-    public function onComplete()
+    public function onComplete(): void
     {
         $this->outputProfileTable();
         $this->outputQueries();

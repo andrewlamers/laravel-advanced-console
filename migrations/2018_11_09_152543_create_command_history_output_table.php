@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
+use Andrewlamers\LaravelAdvancedConsole\Database\Migrations\Migration;
 
 class CreateCommandHistoryOutputTable extends Migration
 {
@@ -13,7 +13,8 @@ class CreateCommandHistoryOutputTable extends Migration
      */
     public function up()
     {
-        Schema::create('command_history_output', function (Blueprint $table) {
+        Schema::connection($this->getConnection())
+            ->create('command_history_output', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('command_history_id');
             $table->binary('output')->nullable();
@@ -28,6 +29,6 @@ class CreateCommandHistoryOutputTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('command_history_output');
+        Schema::connection($this->getConnection())->dropIfExists('command_history_output');
     }
 }

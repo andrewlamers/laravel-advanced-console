@@ -8,6 +8,7 @@
 
 namespace Andrewlamers\LaravelAdvancedConsole\Models;
 
+use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,6 +25,12 @@ class CommandHistory extends Model
         'command_name', 'start_time', 'end_time', 'running', 'completed', 'failed', 'process_id'
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        $this->setConnection(CommandConfig::getConnection());
+        parent::__construct($attributes);
+    }
+
     public function metadata() {
         return $this->hasOne(CommandHistoryMetadata::class);
     }
@@ -32,7 +39,7 @@ class CommandHistory extends Model
         return $this->hasOne(CommandHistoryOutput::class);
     }
 
-    public function exception(\Exception $e) {
+    public function exception(\Exception $e): void {
         $this->fail();
         $this->attributes['exception'] = $e->getMessage();
         $this->metadata->exception_trace = $e->getTraceAsString();
@@ -40,55 +47,66 @@ class CommandHistory extends Model
         $this->save();
     }
 
-    protected function setState($state) {
+    public function updateLineCounts($counts): void {
+        $this->attributes['warning_message_count'] = $counts['warning'];
+        $this->attributes['error_message_count'] = $counts['error'];
+        $this->attributes['info_message_count'] = $counts['info'];
+        $this->attributes['line_message_count'] = $counts['line'];
+    }
+
+    protected function setState($state): void {
         $this->resetState();
         switch($state) {
-            case "failed":
-            case "completed":
-            case "running":
+            case 'failed':
+            case 'completed':
+            case 'running':
                 $this->attributes[$state] = true;
         }
 
         $this->save();
     }
 
-    public function start($startTime) {
+    public function start($startTime): void {
         $this->setAttribute('start_time', $startTime);
         $this->save();
     }
 
-    public function end($endTime) {
+    public function end($endTime): void {
         $this->setAttribute('end_time', $endTime);
         $this->save();
     }
 
-    public function durationMs($milliseconds) {
+    public function durationMs($milliseconds): void {
         $this->setAttribute('duration_ms', $milliseconds);
     }
 
-    public function fail() {
+    public function peakMemoryUsage($value): void {
+        $this->setAttribute('peak_memory_usage_bytes', $value);
+    }
+
+    public function fail(): void {
         $this->setState('failed');
     }
 
-    public function complete() {
+    public function complete(): void {
         $this->setState('completed');
     }
 
-    public function running() {
+    public function running(): void {
         $this->setState('running');
     }
 
-    public function resetState() {
+    public function resetState(): void {
         $this->attributes['completed'] = false;
         $this->attributes['running'] = false;
         $this->attributes['failed'] = false;
     }
 
-    public function setStartTimeAttribute($value) {
+    public function setStartTimeAttribute($value): void {
         $this->attributes['start_time'] = $value;
     }
 
-    public function setEndTimeAttribute($value) {
+    public function setEndTimeAttribute($value): void {
         $this->attributes['end_time'] = $value;
     }
 }

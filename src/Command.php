@@ -8,13 +8,12 @@ use Andrewlamers\LaravelAdvancedConsole\Exceptions\InvalidServiceException;
 use Andrewlamers\LaravelAdvancedConsole\Services\CommandHistoryService;
 use Andrewlamers\LaravelAdvancedConsole\Services\LockingService;
 use Andrewlamers\LaravelAdvancedConsole\Services\MetadataService;
-use Andrewlamers\LaravelAdvancedConsole\Services\OutputService;
 use Andrewlamers\LaravelAdvancedConsole\Services\ProfileService;
 use Andrewlamers\LaravelAdvancedConsole\Services\Service;
 use Illuminate\Console\Command as BaseCommand;
 use Illuminate\Container\Container;
-use function PHPSTORM_META\type;
-use Symfony\Component\Console\Application;
+use Exception;
+use ErrorException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -81,13 +80,27 @@ abstract class Command extends BaseCommand
      */
     private $services = [];
 
+    /**
+     * @var OutputFormatter $outputFormatter
+     */
     protected $outputFormatter;
 
+    /**
+     * @var bool $enabled - Enable command, setting to false will prevent execution.
+     */
     protected $enabled = true;
 
+    /**
+     * @var bool $failed - Command failed state
+     */
     protected $failed = false;
 
+    /**
+     * @var string $memoryBuffer - Buffer bytes to allocate ram to be freed on exception so an error message can be displayed for OOM exceptions.
+     */
     private $memoryBuffer;
+
+    protected $config;
 
     /**
      * Command constructor.
@@ -97,23 +110,30 @@ abstract class Command extends BaseCommand
     public function __construct() {
 
         $this->setLaravel(Container::getInstance());
-        $this->registerService(OutputService::class);
-        $this->registerService(BenchmarkService::class);
-        $this->registerService(CommandHistoryService::class);
-        $this->registerService(MetadataService::class);
-        $this->registerService(LockingService::class);
-        $this->registerService(ProfileService::class);
+        $this->config = $this->getConfig();
+        $this->registerService(new BenchmarkService);
+        $this->registerService(new CommandHistoryService);
+        $this->registerService(new MetadataService);
+        $this->registerService(new LockingService);
+        $this->registerService(new ProfileService);
         $this->outputFormatter = new OutputFormatter(true);
         $this->outputFormatter->setCommand($this);
 
         parent::__construct();
     }
 
-    public function getInput() {
+    /**
+     * @return InputInterface
+     */
+    public function getInput(): InputInterface {
         return $this->input;
     }
 
-    protected function configure()
+    protected function getConfig() {
+        return config('laravel-advanced-console');
+    }
+
+    protected function configure(): void
     {
         $this->executeCallbacks('configure', [], true);
     }
@@ -124,7 +144,7 @@ abstract class Command extends BaseCommand
      * of memory errors.
      * @return void
      */
-    private function setMemoryBuffer() {
+    private function setMemoryBuffer(): void {
         $this->memoryBuffer = str_repeat('*', 1024 * 1024 * 5);
     }
 
@@ -133,7 +153,7 @@ abstract class Command extends BaseCommand
      * Clears the memory buffer on shutdown to leave enough memory for handling
      * fatal errors and cleanup on out of memory errors
      */
-    private function clearMemoryBuffer() {
+    private function clearMemoryBuffer(): void {
         $this->memoryBuffer = null;
     }
 
@@ -141,7 +161,7 @@ abstract class Command extends BaseCommand
      * Shutdown handler to clean up command history after command ends or throws exceptions
      * @throws CommandHistoryOutputException
      */
-    public function onShutdown() {
+    public function onShutdown(): void {
         $this->clearMemoryBuffer();
         $error = error_get_last();
 
@@ -155,12 +175,12 @@ abstract class Command extends BaseCommand
         }
     }
 
-    private function registerShutdownHandler() {
+    private function registerShutdownHandler(): void {
         $this->setMemoryBuffer();
         register_shutdown_function([$this, 'onShutdown']);
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         $this->registerShutdownHandler();
 
@@ -173,15 +193,15 @@ abstract class Command extends BaseCommand
         $this->beforeRun();
     }
 
-    private function setTimeLimit($seconds) {
+    private function setTimeLimit($seconds): void {
         set_time_limit($seconds);
     }
 
-    private function setMemoryLimit($limit) {
+    private function setMemoryLimit($limit): void {
         ini_set('memory_limit', $limit);
     }
 
-    public function executeCallbacks($type, $args = [], $always_execute = false) {
+    public function executeCallbacks($type, $args = [], $always_execute = false): void {
         foreach($this->services as $key => $service) {
             if($always_execute || $service->isEnabled()) {
                 if (method_exists($service, $type)) {
@@ -193,10 +213,8 @@ abstract class Command extends BaseCommand
 
     public function formatLine($string, $style, $verbosity) {
 
-        if(is_array($string)) {
-            if(count($string) > 1) {
-                $string = vsprintf($string[0], array_slice($string, 1));
-            }
+        if(is_array($string) && count($string) > 1) {
+            $string = vsprintf($string[0], array_slice($string, 1));
         }
 
         $string = str_replace('%message%', $string, $this->lineTemplate);
@@ -219,37 +237,42 @@ abstract class Command extends BaseCommand
         return strtoupper($level);
     }
 
-    public function formatLevel($line, $level) {
+    public function formatLevel($line, $level): string {
         $level = sprintf('[%s]', $this->getLevel($level));
         return str_replace('%level%', $level, $line);
     }
 
-    public function infof($format, ...$args) {
+    public function infof($format, ...$args): void {
         $string = $this->sprintLine($format, $args);
         $this->info($string);
     }
 
-    public function warnf($format, ...$args) {
+    public function warnf($format, ...$args): void {
         $string = $this->sprintLine($format,  $args);
         $this->warn($string);
     }
 
-    public function errorf($format, ...$args) {
+    public function errorf($format, ...$args): void {
         $string = $this->sprintLine($format, $args);
         $this->error($string);
     }
 
-    public function commentf($format, ...$args) {
+    public function commentf($format, ...$args): void {
         $string = $this->sprintLine($format, $args);
         $this->comment($string);
     }
 
-    public function linef($format, ...$args) {
+    /**
+     * Accepts arguments to print a formatted line to console through sprintf
+     * @param       $format
+     * @param mixed ...$args
+     */
+    public function linef($format, ...$args): void {
         $string = $this->sprintLine($format, $args);
         $this->line($string);
     }
 
-    public function sprintLine($format, $args) {
+    protected function sprintLine($format, $args): string {
         $args = $this->cleanSprintArgs($args);
         return vsprintf($format, $args);
     }
@@ -264,87 +287,112 @@ abstract class Command extends BaseCommand
         return $args;
     }
 
-    public function line($string, $style = NULL, $verbosity = NULL)
+    /**
+     * @param string|array $string
+     * @param null   $style
+     * @param null   $verbosity
+     * @return void
+     */
+    public function line($string, $style = NULL, $verbosity = NULL) : void
     {
         $string = $this->formatLine($string, $style, $verbosity);
 
         parent::line($string, $style, $verbosity);
     }
 
-    public function title($title) {
+    /**
+     * @param string|array $title
+     */
+    public function title($title) : void  {
         $this->line($title, 'fg=black;bg=white');
     }
 
-    public function header($message) {
+    /**
+     * @param string|array $message
+     */
+    public function header($message): void {
         $this->output->writeln(sprintf('<fg=cyan;bg=default>%s</>', $message));
     }
 
-    public function listing($elements) {
+    /**
+     * @param array $elements
+     */
+    public function listing(array $elements): void {
         $this->output->listing($elements);
     }
 
     /**
-     * @param string $class
+     * @param Service $service
      * @throws InvalidServiceException
      */
-    protected function registerService(string $class) {
-        $service = new $class($this);
+    protected function registerService(Service $service): void {
+
+        $service->setCommand($this);
+        
         $name = camel_case($service->getServiceName());
+
         if(!isset($this->services[$name])) {
             $this->services[$name] = $service;
         } else {
-            throw new InvalidServiceException("Service " . $class . " is already registered.");
+            throw new InvalidServiceException('Service' . $service->getServiceClass() . ' is already registered.');
         }
     }
 
-    public function getServices() {
+    /**
+     * @return array|Service
+     */
+    public function getServices(): array {
         return $this->services;
     }
 
-    protected function onComplete() {
+    /**
+     * @return void
+     */
+    protected function onComplete(): void {
         $this->executeCallbacks('onComplete');
     }
 
-    protected function beforeRun() {
+    protected function beforeRun(): void {
         $this->executeCallbacks('beforeRun');
     }
 
-    protected function afterRun() {
+    protected function afterRun(): void {
         $this->executeCallbacks('afterRun');
     }
 
-    protected function beforeExecute() {
+    protected function beforeExecute(): void {
         $this->executeCallbacks('beforeExecute');
     }
 
-    protected function afterExecute() {
+    protected function afterExecute(): void {
         $this->executeCallbacks('afterExecute');
     }
 
-    protected function onException(\Exception $e) {
+    /**
+     * @param Exception $e
+     */
+    protected function onException(Exception $e): void {
         $this->executeCallbacks('onException', [$e]);
     }
 
-    public function enable() {
+    public function enable(): void {
         $this->enabled = true;
     }
 
-    public function disable() {
+    public function disable(): void {
         $this->enabled = false;
     }
 
-    public function isEnabled() {
+    public function isEnabled(): bool {
         return $this->enabled;
     }
 
-    public function failed() {
+    public function failed(): bool {
         return $this->failed;
     }
 
-    public function run(InputInterface $input, OutputInterface $output)
+    public function run(InputInterface $input, OutputInterface $output): int
     {
-        $result = null;
-
         $result = parent::run($input, $output);
 
         $this->afterRun();
@@ -365,13 +413,15 @@ abstract class Command extends BaseCommand
 
             return $executed;
         }
+
+        return null;
     }
 
     /**
      * @param string $serviceName
      * @return Service | null
      */
-    private function getService($serviceName) {
+    private function getService($serviceName): ?Service {
         $service = array_get($this->services, $serviceName, false);
 
         if($service) {
@@ -384,7 +434,7 @@ abstract class Command extends BaseCommand
     /**
      * @param $name
      * @return mixed
-     * @throws \ErrorException
+     * @throws ErrorException
      */
     public function __get($name)
     {
@@ -393,13 +443,23 @@ abstract class Command extends BaseCommand
             $service = $this->getService($name);
 
             if(!$service) {
-                throw new \ErrorException("Invalid property " . get_called_class() . '::$' . $name);
+                throw new ErrorException('Invalid property ' . static::class . '::$' . $name);
             }
 
             return $service;
 
-        } else {
-            return $this->{$name};
         }
+
+        return $this->{$name};
+    }
+
+    public function __set($name, $value)
+    {
+        $this->{$name} = $value;
+    }
+
+    public function __isset($name)
+    {
+        return isset($this->{$name});
     }
 }

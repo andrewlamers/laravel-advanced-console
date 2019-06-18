@@ -2,11 +2,13 @@
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
+use Andrewlamers\LaravelAdvancedConsole\Database\Migrations\Migration;
 
 class CreateCommandHistoriesTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -14,18 +16,25 @@ class CreateCommandHistoriesTable extends Migration
      */
     public function up()
     {
-        Schema::create('command_histories', function (Blueprint $table) {
+        Schema::connection($this->getConnection())->create('command_histories', function (Blueprint $table) {
             $table->increments('id');
             $table->string('command_name');
             $table->timestamp('start_time')->nullable();
             $table->timestamp('end_time')->nullable();
-            $table->float('duration_ms')->nullable();
+            $table->decimal('duration_ms', 10, 3)->nullable();
+            $table->integer('peak_memory_usage_bytes')->nullable();
             $table->integer('process_id')->nullable();
 
             $table->boolean('running')->default(false);
             $table->boolean('completed')->default(false);
             $table->boolean('failed')->default(false);
             $table->boolean('exception')->default(false);
+
+            $table->integer('warning_message_count')->nullable();
+            $table->integer('info_message_count')->nullable();
+            $table->integer('error_message_count')->nullable();
+            $table->integer('line_message_count')->nullable();
+
             $table->boolean('out_of_memory_exception')->default(false);
 
 
@@ -38,9 +47,9 @@ class CreateCommandHistoriesTable extends Migration
             $table->softDeletes();
         });
 
-        DB::statement("ALTER TABLE `command_histories` MODIFY start_time TIMESTAMP(6) NULL");
-        DB::statement("ALTER TABLE `command_histories` MODIFY end_time TIMESTAMP(6) NULL");
-        DB::statement("ALTER TABLE `command_histories` MODIFY lock_acquired_time TIMESTAMP(6) NULL");
+        DB::connection($this->getConnection())->statement("ALTER TABLE `command_histories` MODIFY start_time TIMESTAMP(6) NULL");
+        DB::connection($this->getConnection())->statement("ALTER TABLE `command_histories` MODIFY end_time TIMESTAMP(6) NULL");
+        DB::connection($this->getConnection())->statement("ALTER TABLE `command_histories` MODIFY lock_acquired_time TIMESTAMP(6) NULL");
     }
 
     /**
@@ -50,6 +59,6 @@ class CreateCommandHistoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('command_histories');
+        Schema::connection($this->getConnection())->dropIfExists('command_histories');
     }
 }

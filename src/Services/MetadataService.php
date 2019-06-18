@@ -14,12 +14,12 @@ class MetadataService extends Service
 {
     public $metadata = [];
 
-    public function initialize($input, $output)
+    public function initialize($input, $output): void
     {
         $this->createMetadata();
     }
 
-    public function beforeExecute() {
+    public function beforeExecute(): void {
         $this->outputMetadata();
     }
 
@@ -36,11 +36,6 @@ class MetadataService extends Service
         }
 
         $this->command->line(sprintf('Starting command %s...', $this->command->getName()));
-    }
-
-    public function formatLine($string, $style, $verbosity)
-    {
-        return $string;
     }
 
     public function add($name, $value = '', $indent = 0, $prefix = '') {
@@ -69,7 +64,7 @@ class MetadataService extends Service
         return $connections;
     }
 
-    protected function formatDatabaseConfig(array $configs) {
+    protected function formatDatabaseConfig(array $configs): void {
         foreach($configs as $name => $config) {
             $this->add('', $name);
 
@@ -82,7 +77,7 @@ class MetadataService extends Service
         }
     }
 
-    protected function formatMetadata() {
+    protected function formatMetadata(): array {
         $listingGroups = [];
 
         $groupNumber = 0;
@@ -100,7 +95,7 @@ class MetadataService extends Service
                 $listingGroups[$groupNumber]['title'] = $data['name'];
             } else {
 
-                if (isset($data['value']) && strlen($data['value']) < 1) {
+                if (isset($data['value']) && ($data['value'] === '' || is_array($data['value']))) {
                     continue;
                 }
 
@@ -113,7 +108,7 @@ class MetadataService extends Service
                         $data['name'] = sprintf('<info>%s%s</info>', str_pad('', $data['indent'], ' ', STR_PAD_LEFT), $data['name']);
                     }
 
-                    if (strlen($data['name']) > 0) {
+                    if ($data['name'] !== '') {
                         $data['name'] = sprintf('<info>%-36s</info>: ', $data['name']);
                     } else {
                         $data['value'] = sprintf('<comment>%s</comment>', $data['value']);
@@ -142,7 +137,7 @@ class MetadataService extends Service
             $this->getGitCommitDate());
     }
 
-    protected function createMetadata() {
+    protected function createMetadata(): void {
 
         $this->add('Location', $this->getPath())
             ->add('Host', $this->getHost())

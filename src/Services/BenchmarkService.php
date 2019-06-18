@@ -16,33 +16,34 @@ class BenchmarkService extends Service
      * @var Command $command
      */
     protected $command;
-    protected $templates = ['%timestamp%', '%elapsedMs%', '%lastElapsedMs%', '%memoryUsage%'];
+
+    protected static $templates = ['%timestamp%', '%elapsedMs%', '%lastElapsedMs%', '%memoryUsage%'];
+
     protected $timestampFormat = 'Y-m-d h:i:s';
 
     protected $startTime;
     protected $endTime;
     protected $lastLineEnd;
-    protected $end;
     protected $lastElapsedTime = 0;
 
-    public function initialize($input, $output) {
+    public function initialize($input, $output): void {
         parent::initialize($input, $output);
         $this->start();
     }
 
-    private function getPeakMemoryUsage() {
+    public function getPeakMemoryUsage() {
         return memory_get_peak_usage();
     }
 
-    private function getCurrentMemoryUsage() {
+    public function getCurrentMemoryUsage() {
         return memory_get_usage();
     }
 
-    private function start() {
+    private function start(): void {
         $this->startTime = microtime(true);
     }
 
-    private function end() {
+    private function end(): void {
         $this->endTime = microtime(true);
     }
 
@@ -74,29 +75,33 @@ class BenchmarkService extends Service
         return $elapsed;
     }
 
-    public function formatNumber($number) {
-        $number = $number * 1000;
+    public function formatNumber($number): string {
         return number_format($number, 2, '.', '');
     }
 
-    public function afterRun() {
+    public function formatMs($number): string {
+        $number *= 1000;
+        return $this->formatNumber($number);
+    }
+
+    public function afterRun(): void {
         $this->end();
 
         if($this->command->failed()) {
             $this->command->error(
-                sprintf('Command %s failed! Command ran for %d ms', $this->command->getName(), $this->formatNumber($this->getTotalElapsedTime()))
+                sprintf('Command %s failed! Command ran for %d ms', $this->command->getName(), $this->formatMs($this->getTotalElapsedTime()))
             );
         }
         else {
             $this->command->info(sprintf('Command %s finished in %d ms. Total Memory Usage: %s',
                     $this->command->getName(),
-                    $this->formatNumber($this->getTotalElapsedTime()),
+                    $this->formatMs($this->getTotalElapsedTime()),
                     $this->humanFilesize($this->getPeakMemoryUsage())
                 ));
         }
     }
 
-    public function formatMemoryUsage() {
+    public function formatMemoryUsage(): string {
         return $this->humanFilesize($this->getCurrentMemoryUsage());
     }
 
@@ -108,38 +113,44 @@ class BenchmarkService extends Service
 
     public function formatTimestamp($line) {
         $date = sprintf('[%s]', (new \DateTime('now'))->format($this->timestampFormat));
-        $elapsed = sprintf('[%sms]', $this->formatNumber($this->getLastElapsedTime()));
+        $elapsed = sprintf('[%sms]', $this->formatMs($this->getLastElapsedTime()));
         $memory = sprintf('[%s]', $this->formatMemoryUsage());
 
-        return str_replace($this->templates, [$date, null, $elapsed, $memory], $line);
+        return str_replace(static::$templates, [$date, null, $elapsed, $memory], $line);
     }
 
-    public function setTimestampFormat($format) {
+    public function setTimestampFormat($format): void {
         $this->timestampFormat = $format;
     }
 
-    public function humanFilesize($size, $precision = 2)
+    /**
+     * Returns a human readable string for bytes
+     * @param     $size
+     * @param int $precision
+     * @return string
+     */
+    public function humanFilesize($size, $precision = 2): string
     {
-
         $isNegative = FALSE;
 
         if ($size < 0) {
             $isNegative = TRUE;
-            $size = $size * -1;
+            $size *= -1;
         }
 
         static $units = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
         $step = 1024;
         $i = 0;
         while (($size / $step) > 0.9) {
-            $size = $size / $step;
+            $size /= $step;
             $i++;
         }
 
         $rounded = round($size, $precision);
 
-        if ($isNegative)
-            $rounded = $rounded * -1;
+        if ($isNegative) {
+            $rounded *= -1;
+        }
 
         return $rounded . $units[$i];
     }

@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrewlamers
- * Date: 11/9/18
- * Time: 6:47 AM
- */
-
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\CommandHistoryOutputException;
 use Andrewlamers\LaravelAdvancedConsole\Models\CommandHistory;
 use Carbon\Carbon;
+use Exception;
 
 class CommandHistoryService extends Service
 {
@@ -30,7 +24,14 @@ class CommandHistoryService extends Service
 
     protected $compressOutput = true;
 
-    private $memoryBuffer;
+    protected $history;
+
+    protected $messageCounts = [
+        'error' => 0,
+        'warning' => 0,
+        'info' => 0,
+        'line' => 0
+    ];
 
     /**
      * @var int $outputSaveInterval - How many lines to wait between syncing output to database
@@ -45,10 +46,13 @@ class CommandHistoryService extends Service
         return $this->compressOutput;
     }
 
-    public function setOutputCompressed() {
+    /**
+     * @throws CommandHistoryOutputException
+     */
+    public function setOutputCompressed(): void {
         if($this->logOutput() && $this->compressOutput()) {
             $conn = $this->model->output->getConnection();
-            $pdo = ($conn->getPdo());
+            $pdo = $conn->getPdo();
             $table = $this->model->output->getTable();
             $stmt = $pdo->prepare('UPDATE ' . $table . ' SET `output` = COMPRESS(output) WHERE id = ?');
             if(!$stmt->execute([$this->model->output->id])) {
@@ -57,8 +61,9 @@ class CommandHistoryService extends Service
         }
     }
 
-    public function initialize($input, $output)
+    public function initialize($input, $output): void
     {
+        $this->history = CommandHistory::on('command_history');
         parent::initialize($input, $output);
         $this->model = new CommandHistory($this->getModelAttributes());
         $this->model->running();
@@ -69,22 +74,22 @@ class CommandHistoryService extends Service
 
     public function getLastRun() {
 
-        $last_run = CommandHistory::where("command_history", $this->command->getName())
-            ->where("completed", true)
-            ->orderBy("start_time", "desc")
+        $last_run = CommandHistory::where('command_history', $this->command->getName())
+            ->where('completed', true)
+            ->orderBy('start_time', 'desc')
             ->first();
 
         return $last_run;
     }
 
-    public function checkProcessState() {
+    public function checkProcessState(): void {
         $processes = $this->getRunningProcesses();
 
         foreach($processes as $process) {
             $running = false;
             if($process->process_id) {
                 $running = $this->getProcessStatusById($process->process_id);
-                if(strlen($running) < 1) {
+                if($running === '') {
                     $process->fail();
                 }
             } else {
@@ -94,32 +99,37 @@ class CommandHistoryService extends Service
     }
 
     public function getRunningProcesses() {
-        return CommandHistory::where("command_name", $this->command->getName())
-            ->where("running", true)
-            ->where("process_id", "!=", $this->getPID())
+        return CommandHistory::where('command_name', $this->command->getName())
+            ->where('running', true)
+            ->where('process_id', '!=', $this->getPID())
             ->get();
     }
 
-    protected function getProcessStatusById($pid) {
-        $status = $this->runProcess('ps -p ' . $pid . ' | grep php');
-        return $status;
+    protected function getProcessStatusById($pid): string {
+        return $this->runProcess('ps -p ' . $pid . ' | grep php');
     }
 
-    public function getModel() {
+    public function getModel(): CommandHistory {
         return $this->model;
     }
 
-    public function onComplete()
+    public function onComplete(): void
     {
+        $this->model->updateLineCounts($this->messageCounts);
         $this->model->end($this->getEndTime());
         $this->model->durationMs($this->getDurationMs());
+        $this->model->peakMemoryUsage($this->getPeakMemoryUsage());
         $this->model->save();
         $this->saveOutput();
         $this->model->metadata->save();
         $this->model->refresh();
     }
 
-    public function onWrite($output) {
+    protected function getPeakMemoryUsage() {
+        return memory_get_peak_usage();
+    }
+
+    public function onWrite($output): void {
         $this->appendOutput($output);
 
         if(count($this->outputBuffer) % $this->outputSaveInterval === 0 && count($this->outputBuffer) > 40) {
@@ -127,40 +137,40 @@ class CommandHistoryService extends Service
         }
     }
 
-    public function afterExecute()
+    public function afterExecute(): void
     {
         $this->model->complete();
     }
 
-    public function appendOutput($output) {
+    public function appendOutput($output): void {
         if($this->logOutput()) {
             if (!$this->model->output) {
                 $this->createOutput();
             }
 
             $this->outputBuffer[] = $output;
-            $this->model->output->output = join("\n", $this->outputBuffer);
+            $this->model->output->output = implode("\n", $this->outputBuffer);
         }
     }
 
-    protected function createOutput() {
+    protected function createOutput(): void {
         if($this->logOutput()) {
             $this->model->output()->create();
             $this->model->refresh();
         }
     }
 
-    public function saveOutput() {
+    public function saveOutput(): void {
         if($this->logOutput()) {
             $this->model->output->save();
         }
     }
 
-    public function onException(\Exception $e) {
+    public function onException(Exception $e): void {
         $this->model->exception($e);
     }
 
-    protected function getModelAttributes() {
+    protected function getModelAttributes(): array {
 
         $attributes = [
             'command_name' => $this->command->getName(),
@@ -172,7 +182,7 @@ class CommandHistoryService extends Service
         return $attributes;
     }
 
-    protected function getMetadataAttributes() {
+    protected function getMetadataAttributes(): array {
         $meta = $this->command->metadata;
         $data = [
             'caller_path' => $meta->getPath(),
@@ -190,11 +200,11 @@ class CommandHistoryService extends Service
         return $data;
     }
 
-    public function getStartTime() {
+    public function getStartTime(): string {
         return $this->getDate($this->command->benchmark->getStartTime());
     }
 
-    public function getEndTime() {
+    public function getEndTime(): string {
         return $this->getDate($this->command->benchmark->getEndTime());
     }
 
@@ -202,12 +212,33 @@ class CommandHistoryService extends Service
         return ($this->command->benchmark->getTotalElapsedTime() * 1000);
     }
 
-    protected function getDate($timestamp) {
+    /**
+     * @param $line
+     * @param $style
+     * @return mixed
+     */
+    public function formatLine($line, $style) {
+        if($style === null) {
+            $style = 'line';
+        }
+
+        $this->incrementLineCount($style);
+
+        return $line;
+    }
+
+    protected function incrementLineCount($type): void {
+        if(isset($this->messageCounts[$type])) {
+            $this->messageCounts[$type]++;
+        }
+    }
+
+    protected function getDate($timestamp): string {
         $date = Carbon::createFromTimestampMs($timestamp * 1000, 'UTC');
         return $date->format($this->dateFormat);
     }
 
-    protected function logOutput() {
+    protected function logOutput(): bool {
         if(property_exists($this->command, 'logOutput')) {
             return $this->command->logOutput;
         }

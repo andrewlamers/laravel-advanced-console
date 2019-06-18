@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
+use Andrewlamers\LaravelAdvancedConsole\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 class CreateCommandHistoryMetadataTable extends Migration
@@ -14,17 +14,18 @@ class CreateCommandHistoryMetadataTable extends Migration
      */
     public function up()
     {
-        Schema::create('command_history_metadata', function (Blueprint $table) {
+        Schema::connection($this->getConnection())
+            ->create('command_history_metadata', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('command_history_id');
 
-            $table->string('caller_path')->nullable();;
-            $table->text('caller_environment')->nullable();;
-            $table->string('caller_hostname')->nullable();;
-            $table->string('caller_user')->nullable();;
-            $table->integer('caller_uid')->nullable();;
-            $table->integer('caller_gid')->nullable();;
-            $table->bigInteger('caller_inode')->nullable();;
+            $table->string('caller_path')->nullable();
+            $table->text('caller_environment')->nullable();
+            $table->string('caller_hostname')->nullable();
+            $table->string('caller_user')->nullable();
+            $table->integer('caller_uid')->nullable();
+            $table->integer('caller_gid')->nullable();
+            $table->bigInteger('caller_inode')->nullable();
 
             $table->integer('num_insert_statements')->nullable();
             $table->integer('num_select_statements')->nullable();
@@ -48,6 +49,6 @@ class CreateCommandHistoryMetadataTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('command_history_metadata');
+        Schema::connection($this->getConnection())->dropIfExists('command_history_metadata');
     }
 }

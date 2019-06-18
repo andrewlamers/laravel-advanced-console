@@ -1,13 +1,19 @@
 <?php
 
 namespace Andrewlamers\LaravelAdvancedConsole;
+use Andrewlamers\LaravelAdvancedConsole\Config\CommandConfig;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 class LaravelAdvancedConsoleServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        $this->app->singleton('laravel-advanced-console.commandConfig', function (Application $app) {
+            $config = $app['config']->get('laravel-advanced-console');
 
+            return new CommandConfig($config);
+        });
     }
 
     public function boot()

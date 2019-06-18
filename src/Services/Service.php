@@ -24,12 +24,19 @@ abstract class Service
     protected $enabled = false;
     protected $canDisable = true;
 
-    public function __construct(Command $command) {
-        $this->setCommand($command);
-        $this->setApplication($command->getLaravel());
+    /**
+     * Service constructor.
+     *
+     * @param Command $command
+     */
+
+    public function __construct($command = null) {
+        if($command) {
+            $this->setCommand($command);
+        }
     }
 
-    public function configure() {
+    public function configure(): void {
         if($this->isEnabled()) {
             $this->command->addOption($this->getDisableOptionName(),
                 NULL, NULL,
@@ -47,19 +54,19 @@ abstract class Service
         }
     }
 
-    protected function getDisableOptionName() {
+    protected function getDisableOptionName(): string {
         return strtolower('disable-' . snake_case($this->getServiceName(), '-'));
     }
 
-    protected function getEnableOptionName() {
+    protected function getEnableOptionName(): string {
         return strtolower('enable-' . snake_case($this->getServiceName(), '-'));
     }
 
-    protected function canDisable() {
+    protected function canDisable(): bool {
         return $this->canDisable;
     }
 
-    public function isDisabled() {
+    public function isDisabled(): bool {
 
         if($this->option($this->getDisableOptionName())) {
             return true;
@@ -72,15 +79,27 @@ abstract class Service
         return $this->command->option($name);
     }
 
-    protected function setCommand($command) {
+    /**
+     * @param Command $command
+     */
+    public function setCommand(Command $command): void {
         $this->command = $command;
+        $this->setApplication($this->command->getLaravel());
     }
 
-    protected function setApplication(Application $application) {
+    /**
+     * @param Application $application
+     */
+    protected function setApplication(Application $application): void {
         $this->application = $application;
     }
 
-    protected function runProcess($command, $path = null) {
+    /**
+     * @param      $command
+     * @param null $path
+     * @return string
+     */
+    protected function runProcess($command, $path = null): string {
         $matches = [];
 
         preg_match_all('/\{(?P<function>[a-zA-Z]+)\}/i', $command, $matches);
@@ -108,33 +127,38 @@ abstract class Service
 
         if ($process->isSuccessful()) {
             return trim($process->getOutput());
-        } else if($process->isTerminated()) {
+        }
+
+        if($process->isTerminated()) {
             return trim($process->getErrorOutput());
         }
 
         throw new ProcessFailedException($process);
     }
 
+    /**
+     * @param $key
+     * @return mixed
+     */
     public function config($key) {
         return $this->application['config']->get($key);
     }
 
-    public function getServiceClass() {
+    public function getServiceClass(): string {
         return class_basename($this);
     }
 
-    public function getServiceName() {
+    public function getServiceName(): string {
         $class = $this->getServiceClass();
         $base = str_replace("Service", '', $class);
-        $name = ucfirst($base);
-        return $name;
+        return ucfirst($base);
     }
 
-    public function getEnableVariableName() {
+    public function getEnableVariableName(): string {
         return sprintf('enable%s', $this->getServiceName());
     }
 
-    public function setEnabled($enabled = true) {
+    public function setEnabled($enabled = true): void {
         $name = $this->getEnableVariableName();
 
         if(isset($this->command->{$name})) {
@@ -142,11 +166,11 @@ abstract class Service
         }
     }
 
-    public function enable() {
+    public function enable(): void {
         $this->setEnabled(true);
     }
 
-    public function disable() {
+    public function disable(): void {
         $this->setEnabled(false);
     }
 
@@ -162,45 +186,44 @@ abstract class Service
     }
 
     protected function getPath() {
-        $dir = $this->application->basePath();
-        return $dir;
+        return $this->application->basePath();
     }
 
-    protected function getHost() {
+    protected function getHost(): string {
         $hostname = gethostname();
         $ip = gethostbyname($hostname);
         return sprintf('%s (%s)', $hostname, $ip);
     }
 
-    protected function getPhpVersion() {
-        return phpversion();
+    protected function getPhpVersion(): string {
+        return PHP_VERSION;
     }
 
-    protected function getEnvironment() {
+    protected function getEnvironment(): string {
         return $this->command->getLaravel()->environment();
     }
 
-    protected function getUser() {
+    protected function getUser(): string {
         return get_current_user();
     }
 
-    protected function getPID() {
+    protected function getPID(): int {
         return getmypid();
     }
 
-    protected function getUID() {
+    protected function getUID(): int {
         return getmyuid();
     }
 
-    public function getGID() {
+    public function getGID(): int {
         return getmygid();
     }
 
-    public function getInode() {
+    public function getInode(): int {
         return getmyinode();
     }
 
-    public function isGitRepo() {
+    public function isGitRepo(): bool {
         $result = $this->runProcess('git status');
 
         if(str_contains($result, 'fatal')) {
@@ -210,15 +233,15 @@ abstract class Service
         return true;
     }
 
-    public function getGitBranch() {
+    public function getGitBranch(): string {
         return $this->runProcess('git rev-parse --abbrev-ref HEAD');
     }
 
-    public function getGitCommitHash() {
+    public function getGitCommitHash(): string {
         return $this->runProcess('git log --pretty="%H" -n1 HEAD');
     }
 
-    public function getGitCommitDate() {
+    public function getGitCommitDate(): string {
         try {
             return Carbon::parse($this->runProcess('git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
         } catch(\Exception $e) {
@@ -226,28 +249,28 @@ abstract class Service
         }
     }
 
-    public function getGitCommitterName() {
+    public function getGitCommitterName(): string {
         return $this->runProcess('git log --pretty="%an" -n1 HEAD');
     }
 
-    public function getGitCommitterEmail() {
+    public function getGitCommitterEmail(): string {
         return $this->runProcess('git log --pretty="%ae" -n1 HEAD');
     }
 
-    public function getGitCommitMessage() {
+    public function getGitCommitMessage(): string {
         return $this->runProcess('git log --pretty="%s" -n1 HEAD');
     }
 
-    public function getAppDebug() {
+    public function getAppDebug(): string {
         return ($this->command->getLaravel()->get('config')->get('app.debug') ? 'True' : 'False');
     }
 
-    function onWrite($line) {}
-    function onComplete() {}
-    function onLoad() {}
-    function beforeRun() {}
-    function afterRun() {}
-    function beforeExecute() {}
-    function afterExecute() {}
-    function onShutdown() {}
+    public function onWrite($line) {}
+    public function onComplete() {}
+    public function onLoad() {}
+    public function beforeRun() {}
+    public function afterRun() {}
+    public function beforeExecute() {}
+    public function afterExecute() {}
+    public function onShutdown() {}
 }

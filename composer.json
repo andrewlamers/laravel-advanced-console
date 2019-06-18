@@ -21,7 +21,8 @@
         "illuminate/support": "^5.4",
         "illuminate/mail": "^5.4",
         "symfony/process": "~4.0",
-        "symfony/console": "^4.0"
+        "symfony/console": "^4.0",
+        "ext-json": "*"
     },
     "autoload": {
         "psr-4": {
