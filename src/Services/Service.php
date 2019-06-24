@@ -241,7 +241,7 @@ abstract class Service
         return $this->runProcess('git log --pretty="%H" -n1 HEAD');
     }
 
-    public function getGitCommitDate(): string {
+    public function getGitCommitDate(): ?string {
         try {
             return Carbon::parse($this->runProcess('git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
         } catch(\Exception $e) {

@@ -111,8 +111,8 @@ abstract class Command extends BaseCommand
 
         $this->setLaravel(Container::getInstance());
         $this->config = $this->getConfig();
-        $this->registerService(new BenchmarkService);
         $this->registerService(new CommandHistoryService);
+        $this->registerService(new BenchmarkService);
         $this->registerService(new MetadataService);
         $this->registerService(new LockingService);
         $this->registerService(new ProfileService);

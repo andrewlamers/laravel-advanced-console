@@ -2,9 +2,11 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\CommandHistoryOutputException;
+use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
 use Andrewlamers\LaravelAdvancedConsole\Models\CommandHistory;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class CommandHistoryService extends Service
 {
@@ -63,9 +65,12 @@ class CommandHistoryService extends Service
 
     public function initialize($input, $output): void
     {
-        $this->history = CommandHistory::on('command_history');
-        parent::initialize($input, $output);
+        $this->history = CommandHistory::on(CommandConfig::getConnection());
+
         $this->model = new CommandHistory($this->getModelAttributes());
+
+        parent::initialize($input, $output);
+
         $this->model->running();
         $this->model->save();
         $this->model->metadata()->create($this->getMetadataAttributes());
@@ -109,7 +114,7 @@ class CommandHistoryService extends Service
         return $this->runProcess('ps -p ' . $pid . ' | grep php');
     }
 
-    public function getModel(): CommandHistory {
+    public function getModel() {
         return $this->model;
     }
 
