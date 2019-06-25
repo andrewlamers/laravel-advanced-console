@@ -266,11 +266,11 @@ abstract class Service
     }
 
     public function onWrite($line) {}
-    public function onComplete() {}
-    public function onLoad() {}
-    public function beforeRun() {}
-    public function afterRun() {}
-    public function beforeExecute() {}
-    public function afterExecute() {}
-    public function onShutdown() {}
+    public function onComplete(): void {}
+    public function onLoad(): void {}
+    public function beforeRun(): void {}
+    public function afterRun(): void {}
+    public function beforeExecute(): void {}
+    public function afterExecute(): void {}
+    public function onShutdown(): void {}
 }

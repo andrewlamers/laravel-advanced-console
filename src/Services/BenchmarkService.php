@@ -1,14 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrewlamers
- * Date: 3/2/18
- * Time: 1:19 PM
- */
-
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
 use Andrewlamers\LaravelAdvancedConsole\Command;
+use DateTime;
 
 class BenchmarkService extends Service
 {
@@ -76,28 +70,115 @@ class BenchmarkService extends Service
     }
 
     public function formatNumber($number): string {
-        return number_format($number, 2, '.', '');
+        return number_format($number, 2);
     }
 
     public function formatMs($number): string {
-        $number *= 1000;
-        return $this->formatNumber($number);
+        $ms = $number * 1000;
+        return $this->formatNumber($ms);
+    }
+
+    /**
+     * Converts seconds to a human readable string
+     * @param $seconds
+     * @return string
+     */
+    public function secondsToTimeString($seconds): string {
+
+        $times = $this->msToTime($seconds);
+
+        $values = [];
+
+        foreach($times as $key => $value) {
+            if($value > 0) {
+                $values[] = $value . ' ' . $key;
+            }
+        }
+
+        return implode(' ', $values);
+    }
+
+    /**
+     * Converts seconds to days/hours/minutes/seconds/ms and returns an array with each value
+     * @param $time - time in seconds
+     * @return array
+     */
+    public function msToTime($time): array {
+        $days = 0;
+        $hours = 0;
+
+        $seconds = floor($time);
+        $minutes = floor(($seconds / 60) % 60);
+
+        $milliseconds = floor(($time - $seconds) * 1000);
+
+        if($seconds >= 3600) {
+            $hours = floor($seconds / 3600);
+        }
+
+        if($seconds >= (3600 * 24)) {
+            $days = floor($seconds / (24 * 3600));
+            $hours -= ($days * 24);
+        }
+
+        $seconds %= 60;
+
+        return [
+            'days' => $days,
+            'hours' => $hours,
+            'minutes' => $minutes,
+            'seconds' => $seconds,
+            'ms' => $milliseconds
+        ];
     }
 
     public function afterRun(): void {
         $this->end();
 
         if($this->command->failed()) {
-            $this->command->error(
-                sprintf('Command %s failed! Command ran for %d ms', $this->command->getName(), $this->formatMs($this->getTotalElapsedTime()))
-            );
+            $this->command->errorf('Command %s failed! Command ran for %s ms',
+                $this->command->getName(), $this->secondsToTimeString($this->getTotalElapsedTime()));
         }
         else {
-            $this->command->info(sprintf('Command %s finished in %d ms. Total Memory Usage: %s',
-                    $this->command->getName(),
-                    $this->formatMs($this->getTotalElapsedTime()),
-                    $this->humanFilesize($this->getPeakMemoryUsage())
-                ));
+
+            $error_msg = '';
+            $has_errors = false;
+            $has_warnings = false;
+
+            $message = sprintf('Command %s completed {error_msg} in %s. (%s ms). Total Memory Usage: %s',
+                $this->command->getName(),
+                $this->secondsToTimeString($this->getTotalElapsedTime()),
+                $this->formatMs($this->getTotalElapsedTime()),
+                $this->humanFilesize($this->getPeakMemoryUsage())
+            );
+
+            if($this->command->getWarningCount() > 0 && $this->command->getErrorCount() < 1) {
+                $error_msg = sprintf('with %d warnings', $this->command->getWarningCount());
+                $has_warnings = true;
+            }
+            else if($this->command->getErrorCount() > 0 && $this->command->getWarningCount() < 1) {
+                $error_msg = sprintf('with %d errors', $this->command->getErrorCount());
+                $has_errors = true;
+            }
+            else if($this->command->getErrorCount() > 0 && $this->command->getWarningCount() > 0) {
+                $error_msg = sprintf('with %d warnings and %d errors', $this->command->getWarningCount(), $this->command->getErrorCount());
+                $has_warnings = true;
+                $has_errors = true;
+            }
+
+            $message = str_replace('{error_msg}', $error_msg, $message);
+
+
+            if($has_errors || $has_warnings) {
+                if(!$has_errors) {
+                    $this->command->warn($message);
+                } else {
+                    $this->command->error($message);
+                }
+            }
+            else {
+                $this->command->info($message);
+            }
         }
     }
 
@@ -105,6 +186,12 @@ class BenchmarkService extends Service
         return $this->humanFilesize($this->getCurrentMemoryUsage());
     }
 
+    /**
+     * @param $line
+     * @param $style
+     * @param $verbosity
+     * @return mixed|string
+     */
     public function formatLine($line, $style, $verbosity) {
         $line = '%timestamp%%lastElapsedMs%%memoryUsage%'.$line;
         $line = $this->formatTimestamp($line);
@@ -112,7 +199,7 @@ class BenchmarkService extends Service
     }
 
     public function formatTimestamp($line) {
-        $date = sprintf('[%s]', (new \DateTime('now'))->format($this->timestampFormat));
+        $date = sprintf('[%s]', (new DateTime('now'))->format($this->timestampFormat));
         $elapsed = sprintf('[%sms]', $this->formatMs($this->getLastElapsedTime()));
         $memory = sprintf('[%s]', $this->formatMemoryUsage());
 

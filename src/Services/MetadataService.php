@@ -137,6 +137,10 @@ class MetadataService extends Service
             $this->getGitCommitDate());
     }
 
+    public function getTimezone() {
+        return date_default_timezone_get();
+    }
+
     protected function createMetadata(): void {
 
         $this->add('Location', $this->getPath())
@@ -150,7 +154,8 @@ class MetadataService extends Service
             ->add('UID', $this->getUID())
             ->add('GID', $this->getGID())
             ->add('PID', $this->getPID())
-            ->add('Inode', $this->getInode());
+            ->add('Inode', $this->getInode())
+            ->add('Timezone', $this->getTimezone());
 
         if($this->isGitRepo()) {
             $this->add('Git Branch', sprintf('%s', $this->getGitBranch()))

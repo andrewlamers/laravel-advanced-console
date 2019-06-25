@@ -140,7 +140,7 @@ abstract class Command extends BaseCommand
 
     /**
      * setMemoryBuffer
-     * allocates 5MB of ram to clear on shutdown for handling exceptions and out
+     * allocates 5MB of memory to have overhead on shutdown for handling exceptions and out
      * of memory errors.
      * @return void
      */
@@ -257,6 +257,11 @@ abstract class Command extends BaseCommand
         $this->error($string);
     }
 
+    /**
+     * @inheritDoc @linef
+     * @param       $format
+     * @param mixed ...$args
+     */
     public function commentf($format, ...$args): void {
         $string = $this->sprintLine($format, $args);
         $this->comment($string);
@@ -277,7 +282,12 @@ abstract class Command extends BaseCommand
         return vsprintf($format, $args);
     }
 
-    protected function cleanSprintArgs($args) {
+    /**
+     * cleans arguments for sprintf to convert objects into json for output
+     * @param $args - array of arguments to print
+     * @return array
+     */
+    protected function cleanSprintArgs(array $args): array {
         foreach($args as $index => $arg) {
             if(is_array($arg) || is_object($arg)) {
                 $args[$index] = json_encode($arg);
@@ -319,6 +329,22 @@ abstract class Command extends BaseCommand
      */
     public function listing(array $elements): void {
         $this->output->listing($elements);
+    }
+
+    public function hasWarnings(): bool {
+        return $this->getWarningCount() > 0;
+    }
+
+    public function hasErrors(): bool {
+        return $this->getErrorCount() > 0;
+    }
+
+    public function getWarningCount() {
+        return $this->commandHistory->getMessageCounts('warning');
+    }
+
+    public function getErrorCount() {
+        return $this->commandHistory->getMessageCounts('error');
     }
 
     /**

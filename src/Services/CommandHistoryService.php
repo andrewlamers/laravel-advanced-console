@@ -128,6 +128,15 @@ class CommandHistoryService extends Service
         $this->saveOutput();
         $this->model->metadata->save();
         $this->model->refresh();
+
+
+        if($this->messageCounts['error'] > 0) {
+            $this->command->errorf('Command had %s errors.', $this->messageCounts['error']);
+        }
+
+        if($this->messageCounts['warning'] > 0) {
+            $this->command->warnf('Command had %s warnings.', $this->messageCounts['warning']);
+        }
     }
 
     protected function getPeakMemoryUsage() {
@@ -215,6 +224,25 @@ class CommandHistoryService extends Service
 
     public function getDurationMs() {
         return ($this->command->benchmark->getTotalElapsedTime() * 1000);
+    }
+
+    public function getMessageCounts($key = null) {
+
+        if(isset($this->messageCounts[$key])) {
+            return $this->messageCounts[$key];
+        }
+
+        return $this->messageCounts;
+    }
+
+    public function getMessageCountLine(): string {
+        $string =  [];
+
+        foreach($this->getMessageCounts() as $type => $count) {
+            $string[] = $count . ' ' . $type;
+        }
+
+        return implode(' ', $string);
     }
 
     /**

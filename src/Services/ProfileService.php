@@ -1,7 +1,6 @@
 <?php
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
-use Andrewlamers\LaravelAdvancedConsole\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
