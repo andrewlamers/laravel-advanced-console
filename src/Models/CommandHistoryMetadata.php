@@ -3,7 +3,6 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Models;
 
 use Andrewlamers\LaravelAdvancedConsole\Command;
-use Andrewlamers\LaravelAdvancedConsole\Models\CommandHistory;
 use Illuminate\Database\Eloquent\Model;
 
 /**

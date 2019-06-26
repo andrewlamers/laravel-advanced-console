@@ -11,7 +11,7 @@ namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
 class LockingService extends Service
 {
-    public function beforeExecute()
+    public function beforeExecute(): void
     {
         if($this->isEnabled()) {
             $this->command->info('Command locking enabled, attempting to aquire lock.');

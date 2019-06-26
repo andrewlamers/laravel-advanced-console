@@ -5,7 +5,7 @@ namespace Andrewlamers\LaravelAdvancedConsole\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Illuminate\Log\Writer
+ * @see \Andrewlamers\LaravelAdvancedConsole\Config\CommandConfig
  */
 class CommandConfig extends Facade
 {
@@ -14,7 +14,7 @@ class CommandConfig extends Facade
      *
      * @return string
      */
-    protected static function getFacadeAccessor()
+    protected static function getFacadeAccessor(): string
     {
         return 'laravel-advanced-console.commandConfig';
     }

@@ -9,7 +9,9 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Exceptions;
 
 
-class InvalidServiceException extends \Exception
+use Exception;
+
+class InvalidServiceException extends Exception
 {
 
 }

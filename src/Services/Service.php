@@ -10,6 +10,7 @@ namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
 use Andrewlamers\LaravelAdvancedConsole\Command;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -48,7 +49,7 @@ abstract class Service
         }
     }
 
-    public function initialize($input, $output) {
+    public function initialize($input, $output): void {
         if($this->isDisabled() && $this->canDisable()) {
             $this->disable();
         }
@@ -104,14 +105,12 @@ abstract class Service
 
         preg_match_all('/\{(?P<function>[a-zA-Z]+)\}/i', $command, $matches);
 
-        if(count($matches) > 0) {
-            if(isset($matches['function']) && count($matches['function']) > 0) {
-                foreach($matches['function'] as $function) {
-                    if(method_exists($this, $function)) {
-                        $result = call_user_func([$this, $function]);
-                        if(is_string($result) || is_integer($result)) {
-                            $command = str_replace('{' . $function . '}', $result, $command);
-                        }
+        if((count($matches) > 0) && isset($matches['function']) && count($matches['function']) > 0) {
+            foreach($matches['function'] as $function) {
+                if(method_exists($this, $function)) {
+                    $result = $this->$function();
+                    if(is_string($result) || is_int($result)) {
+                        $command = str_replace('{' . $function . '}', $result, $command);
                     }
                 }
             }
@@ -167,7 +166,7 @@ abstract class Service
     }
 
     public function enable(): void {
-        $this->setEnabled(true);
+        $this->setEnabled();
     }
 
     public function disable(): void {
@@ -244,7 +243,7 @@ abstract class Service
     public function getGitCommitDate(): ?string {
         try {
             return Carbon::parse($this->runProcess('git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
-        } catch(\Exception $e) {
+        } catch(Exception $e) {
             return null;
         }
     }

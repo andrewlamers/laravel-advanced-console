@@ -149,7 +149,7 @@ class BenchmarkService extends Service
                 $this->command->getName(),
                 $this->secondsToTimeString($this->getTotalElapsedTime()),
                 $this->formatMs($this->getTotalElapsedTime()),
-                $this->humanFilesize($this->getPeakMemoryUsage())
+                $this->humanFileSize($this->getPeakMemoryUsage())
             );
 
             if($this->command->getWarningCount() > 0 && $this->command->getErrorCount() < 1) {
@@ -183,7 +183,7 @@ class BenchmarkService extends Service
     }
 
     public function formatMemoryUsage(): string {
-        return $this->humanFilesize($this->getCurrentMemoryUsage());
+        return $this->humanFileSize($this->getCurrentMemoryUsage());
     }
 
     /**
@@ -216,7 +216,7 @@ class BenchmarkService extends Service
      * @param int $precision
      * @return string
      */
-    public function humanFilesize($size, $precision = 2): string
+    public function humanFileSize($size, $precision = 2): string
     {
         $isNegative = FALSE;
 

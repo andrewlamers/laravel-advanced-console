@@ -6,7 +6,6 @@ use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
 use Andrewlamers\LaravelAdvancedConsole\Models\CommandHistory;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Support\Facades\DB;
 
 class CommandHistoryService extends Service
 {
@@ -91,7 +90,6 @@ class CommandHistoryService extends Service
         $processes = $this->getRunningProcesses();
 
         foreach($processes as $process) {
-            $running = false;
             if($process->process_id) {
                 $running = $this->getProcessStatusById($process->process_id);
                 if($running === '') {

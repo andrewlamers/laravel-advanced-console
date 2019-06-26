@@ -1,16 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrewlamers
- * Date: 11/9/18
- * Time: 6:47 AM
- */
-
 namespace Andrewlamers\LaravelAdvancedConsole\Models;
 
 use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
-use Carbon\Carbon;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Class CommandHistory
@@ -31,15 +25,15 @@ class CommandHistory extends Model
         parent::__construct($attributes);
     }
 
-    public function metadata() {
+    public function metadata(): HasOne {
         return $this->hasOne(CommandHistoryMetadata::class);
     }
 
-    public function output() {
+    public function output(): HasOne {
         return $this->hasOne(CommandHistoryOutput::class);
     }
 
-    public function exception(\Exception $e): void {
+    public function exception(Exception $e): void {
         $this->fail();
         $this->attributes['exception'] = $e->getMessage();
         $this->metadata->exception_trace = $e->getTraceAsString();

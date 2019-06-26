@@ -3,7 +3,6 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Models;
 
 use Andrewlamers\LaravelAdvancedConsole\Command;
-use Andrewlamers\LaravelAdvancedConsole\Models\CommandHistory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -13,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Command $command
  * @property string $output
  * @property int $command_history_id
+ * @property int $id
  */
 class CommandHistoryOutput extends Model
 {

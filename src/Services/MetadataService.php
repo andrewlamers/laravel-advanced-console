@@ -1,14 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: andrewlamers
- * Date: 3/2/18
- * Time: 2:33 PM
- */
-
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
-
-use Andrewlamers\LaravelAdvancedConsole\Command;
 
 class MetadataService extends Service
 {
@@ -72,7 +63,7 @@ class MetadataService extends Service
                 if (is_bool($value)) {
                     $value = (boolval($value) ? 'True' : 'False');
                 }
-                $this->add($key, $value, 2, '');
+                $this->add($key, $value, 2);
             }
         }
     }
@@ -206,7 +197,7 @@ class MetadataService extends Service
             $this->add('Services');
 
             foreach($services as $service) {
-                $this->add($service->getServiceClass(), ($service->isEnabled() ? 'Enabled' : 'Disabled'), 1, '');
+                $this->add($service->getServiceClass(), ($service->isEnabled() ? 'Enabled' : 'Disabled'), 1);
             }
         }
     }

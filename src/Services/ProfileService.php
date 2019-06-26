@@ -55,7 +55,7 @@ class ProfileService extends Service
 
     protected function parseQueryType($sql) {
         preg_match('/^(?<type>[a-zA-Z]+)/', $sql, $matches);
-        return array_get($matches, 'type', null);
+        return array_get($matches, 'type');
     }
 
     protected function queryIsProfileable($sql): bool {
