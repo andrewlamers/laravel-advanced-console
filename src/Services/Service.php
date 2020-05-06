@@ -11,6 +11,7 @@ namespace Andrewlamers\LaravelAdvancedConsole\Services;
 use Andrewlamers\LaravelAdvancedConsole\Command;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -261,7 +262,7 @@ abstract class Service
     }
 
     public function getAppDebug(): string {
-        return ($this->command->getLaravel()->get('config')->get('app.debug') ? 'True' : 'False');
+        return (Container::getInstance()->make('config')->get('app.debug') ? 'True' : 'False');
     }
 
     public function onWrite($line) {}

@@ -167,7 +167,7 @@ class CommandHistoryService extends Service
 
     protected function createOutput(): void {
         if($this->logOutput()) {
-            $this->model->output()->create();
+            $this->model->output()->create([]);
             $this->model->refresh();
         }
     }
