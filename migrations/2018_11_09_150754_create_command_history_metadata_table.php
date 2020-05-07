@@ -37,6 +37,7 @@ class CreateCommandHistoryMetadataTable extends Migration
             $table->timestamp('git_commit_date')->nullable();
 
             $table->text('extra_metadata')->nullable();
+            $table->text('exception_trace')->nullable();
 
             $table->timestamps();
         });

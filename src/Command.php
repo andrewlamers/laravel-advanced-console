@@ -5,6 +5,7 @@ use Andrewlamers\LaravelAdvancedConsole\Console\Formatter\OutputFormatter;
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\CommandHistoryOutputException;
 use Andrewlamers\LaravelAdvancedConsole\Services\BenchmarkService;
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\InvalidServiceException;
+use Andrewlamers\LaravelAdvancedConsole\Services\CommandEventService;
 use Andrewlamers\LaravelAdvancedConsole\Services\CommandHistoryService;
 use Andrewlamers\LaravelAdvancedConsole\Services\LockingService;
 use Andrewlamers\LaravelAdvancedConsole\Services\MetadataService;
@@ -60,6 +61,8 @@ abstract class Command extends BaseCommand
      */
     public $enableLocking = false;
 
+    public $enableCommandEvent = true;
+
     /**
      * @var string $lineTemplate - Template for console lines
      */
@@ -102,6 +105,8 @@ abstract class Command extends BaseCommand
 
     protected $config;
 
+    protected $exception;
+
     /**
      * Command constructor.
      *
@@ -116,6 +121,7 @@ abstract class Command extends BaseCommand
         $this->registerService(new MetadataService);
         $this->registerService(new LockingService);
         $this->registerService(new ProfileService);
+        $this->registerService(new CommandEventService);
         $this->outputFormatter = new OutputFormatter(true);
         $this->outputFormatter->setCommand($this);
 
@@ -398,6 +404,7 @@ abstract class Command extends BaseCommand
      * @param Exception $e
      */
     protected function onException(Exception $e): void {
+        $this->exception = $e;
         $this->executeCallbacks('onException', [$e]);
     }
 
@@ -413,13 +420,30 @@ abstract class Command extends BaseCommand
         return $this->enabled;
     }
 
-    public function failed(): bool {
+    public function failed($failed = null): bool {
+        if($failed !== null) {
+            $this->failed = $failed;
+        }
+
         return $this->failed;
+    }
+
+    public function exception() {
+        return $this->exception;
     }
 
     public function run(InputInterface $input, OutputInterface $output): int
     {
-        $result = parent::run($input, $output);
+        $result = 0;
+
+        try {
+
+            $result = parent::run($input, $output);
+        } catch(\Exception $e) {
+            $this->commandHistory->enableMessageCounts(false);
+            $this->onException($e);
+            $this->failed(true);
+        }
 
         $this->afterRun();
         $this->onComplete();
@@ -433,7 +457,9 @@ abstract class Command extends BaseCommand
 
         if($this->isEnabled()) {
 
+            $this->commandHistory->enableMessageCounts(true);
             $executed = parent::execute($input, $output);
+            $this->commandHistory->enableMessageCounts(false);
 
             $this->afterExecute();
 

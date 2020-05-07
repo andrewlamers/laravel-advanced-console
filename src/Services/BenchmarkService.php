@@ -135,7 +135,11 @@ class BenchmarkService extends Service
     public function afterRun(): void {
         $this->end();
 
-        if($this->command->failed()) {
+        if($this->command->exception()) {
+            $this->command->errorf('Command %s failed with exception!', $this->command->getName());
+            $this->command->errorf('Exception: %s', $this->command->exception()->getMessage());
+        }
+        else if($this->command->failed()) {
             $this->command->errorf('Command %s failed! Command ran for %s ms',
                 $this->command->getName(), $this->secondsToTimeString($this->getTotalElapsedTime()));
         }

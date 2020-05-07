@@ -34,6 +34,8 @@ class CommandHistoryService extends Service
         'line' => 0
     ];
 
+    protected $enableMessageCounts = false;
+
     /**
      * @var int $outputSaveInterval - How many lines to wait between syncing output to database
      */
@@ -60,6 +62,14 @@ class CommandHistoryService extends Service
                 throw new CommandHistoryOutputException('Error setting output compression.');
             }
         }
+    }
+
+    public function enableMessageCounts($enabled = null): void {
+        $this->enableMessageCounts = $enabled;
+    }
+
+    public function shouldCountMessages(): bool {
+        return $this->enableMessageCounts;
     }
 
     public function initialize($input, $output): void
@@ -259,7 +269,7 @@ class CommandHistoryService extends Service
     }
 
     protected function incrementLineCount($type): void {
-        if(isset($this->messageCounts[$type])) {
+        if(isset($this->messageCounts[$type]) && $this->shouldCountMessages()) {
             $this->messageCounts[$type]++;
         }
     }

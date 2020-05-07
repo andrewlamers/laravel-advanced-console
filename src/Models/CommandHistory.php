@@ -35,7 +35,7 @@ class CommandHistory extends Model
 
     public function exception(Exception $e): void {
         $this->fail();
-        $this->attributes['exception'] = $e->getMessage();
+        $this->attributes['exception'] = true;
         $this->metadata->exception_trace = $e->getTraceAsString();
         $this->metadata->save();
         $this->save();
