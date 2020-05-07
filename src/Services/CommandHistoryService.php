@@ -88,7 +88,7 @@ class CommandHistoryService extends Service
 
     public function getLastRun() {
 
-        $last_run = CommandHistory::where('command_history', $this->command->getName())
+        $last_run = CommandHistory::where('command_name', $this->command->getName())
             ->where('completed', true)
             ->orderBy('start_time', 'desc')
             ->first();
