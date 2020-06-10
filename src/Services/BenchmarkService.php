@@ -75,7 +75,7 @@ class BenchmarkService extends Service
 
     public function formatMs($number): string {
         $ms = $number * 1000;
-        return $this->formatNumber($ms);
+        return str_pad($this->formatNumber($ms), 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -135,11 +135,7 @@ class BenchmarkService extends Service
     public function afterRun(): void {
         $this->end();
 
-        if($this->command->exception()) {
-            $this->command->errorf('Command %s failed with exception!', $this->command->getName());
-            $this->command->errorf('Exception: %s', $this->command->exception()->getMessage());
-        }
-        else if($this->command->failed()) {
+        if($this->command->failed()) {
             $this->command->errorf('Command %s failed! Command ran for %s ms',
                 $this->command->getName(), $this->secondsToTimeString($this->getTotalElapsedTime()));
         }

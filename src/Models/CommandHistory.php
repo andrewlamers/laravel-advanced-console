@@ -2,6 +2,7 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Models;
 
 use Andrewlamers\LaravelAdvancedConsole\Facades\CommandConfig;
+use Andrewlamers\LaravelAdvancedConsole\Handlers\ExceptionHandler;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -36,7 +37,7 @@ class CommandHistory extends Model
     public function exception(Exception $e): void {
         $this->fail();
         $this->attributes['exception'] = true;
-        $this->metadata->exception_trace = $e->getTraceAsString();
+        $this->metadata->exception_trace = new ExceptionHandler($e);
         $this->metadata->save();
         $this->save();
     }

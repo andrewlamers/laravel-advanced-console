@@ -3,6 +3,8 @@ namespace Andrewlamers\LaravelAdvancedConsole;
 
 use Andrewlamers\LaravelAdvancedConsole\Console\Formatter\OutputFormatter;
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\CommandHistoryOutputException;
+use Andrewlamers\LaravelAdvancedConsole\Handlers\DumpHandler;
+use Andrewlamers\LaravelAdvancedConsole\Handlers\ExceptionHandler;
 use Andrewlamers\LaravelAdvancedConsole\Services\BenchmarkService;
 use Andrewlamers\LaravelAdvancedConsole\Exceptions\InvalidServiceException;
 use Andrewlamers\LaravelAdvancedConsole\Services\CommandEventService;
@@ -63,6 +65,8 @@ abstract class Command extends BaseCommand
 
     public $enableCommandEvent = true;
 
+    protected $arguments;
+
     /**
      * @var string $lineTemplate - Template for console lines
      */
@@ -108,11 +112,20 @@ abstract class Command extends BaseCommand
     protected $exception;
 
     /**
+     * @var Symfony\Component\Console\Helper\ProgressBar $progress
+     */
+    protected $progress;
+
+    protected $dumpConfig = [];
+
+    /**
      * Command constructor.
      *
      * @throws InvalidServiceException
      */
     public function __construct() {
+
+        $this->configureSignature();
 
         $this->setLaravel(Container::getInstance());
         $this->config = $this->getConfig();
@@ -126,6 +139,21 @@ abstract class Command extends BaseCommand
         $this->outputFormatter->setCommand($this);
 
         parent::__construct();
+    }
+
+    protected function configureSignature() {
+        if(!$this->signature) {
+            $this->signature = $this->getSignatureFromClassPath(get_class($this));
+        }
+    }
+
+    protected function getSignatureFromClassPath($classPath) {
+        $classPath = str_replace('App\\Console\\Commands\\', '', $classPath);
+        $classPath = strtolower($classPath);
+        $parts = explode('\\', $classPath);
+        $name = implode(':', $parts);
+
+        return sprintf('%s %s', $name, $this->arguments);
     }
 
     /**
@@ -404,8 +432,12 @@ abstract class Command extends BaseCommand
      * @param Exception $e
      */
     protected function onException(Exception $e): void {
-        $this->exception = $e;
+        $this->exception = new ExceptionHandler($e);
         $this->executeCallbacks('onException', [$e]);
+
+        $this->errorf('Command %s failed with exception!', $this->getName());
+        $this->exception->render($this->getOutput());
+
     }
 
     public function enable(): void {
@@ -481,6 +513,21 @@ abstract class Command extends BaseCommand
         }
 
         return null;
+    }
+
+    protected function dump($object, $keys = []) {
+        $handler = new DumpHandler($object, $this, $keys);
+
+        $handler->render();
+    }
+
+    protected function progress() {
+
+        if(!$this->progress) {
+            $this->progress = $this->getOutput()->createProgressBar();
+        }
+
+        return $this->progress;
     }
 
     /**
