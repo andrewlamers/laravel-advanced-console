@@ -1,6 +1,8 @@
 <?php
 namespace Andrewlamers\LaravelAdvancedConsole\Services;
 
+use Illuminate\Support\Arr;
+
 class MetadataService extends Service
 {
     public $metadata = [];
@@ -49,7 +51,7 @@ class MetadataService extends Service
         $connections = $this->config('database.connections');
 
         foreach($connections as $name => $connection) {
-            $connections[$name] = array_dot(array_except($connection, 'password'));
+            $connections[$name] = Arr::dot(Arr::except($connection, 'password'));
         }
 
         return $connections;

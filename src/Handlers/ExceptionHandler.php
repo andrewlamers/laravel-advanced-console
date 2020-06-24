@@ -16,7 +16,11 @@ class ExceptionHandler {
     }
 
     public function getAsString() {
-        return $this->flattenedException->getAsString();
+        if(method_exists($this->flattenedException, 'getAsString')) {
+           return $this->flattenedException->getAsString();
+        }
+
+        return sprintf('Exception on line %s: %s', $this->exception->getLine(), $this->exception->getMessage());
     }
 
     public function render($output) {

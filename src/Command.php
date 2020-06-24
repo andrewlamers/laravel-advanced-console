@@ -15,6 +15,8 @@ use Andrewlamers\LaravelAdvancedConsole\Services\ProfileService;
 use Andrewlamers\LaravelAdvancedConsole\Services\Service;
 use Illuminate\Console\Command as BaseCommand;
 use Illuminate\Container\Container;
+use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 use Exception;
 use ErrorException;
 use Symfony\Component\Console\Input\InputInterface;
@@ -129,8 +131,8 @@ abstract class Command extends BaseCommand
 
         $this->setLaravel(Container::getInstance());
         $this->config = $this->getConfig();
-        $this->registerService(new CommandHistoryService);
         $this->registerService(new BenchmarkService);
+        $this->registerService(new CommandHistoryService);
         $this->registerService(new MetadataService);
         $this->registerService(new LockingService);
         $this->registerService(new ProfileService);
@@ -149,8 +151,12 @@ abstract class Command extends BaseCommand
 
     protected function getSignatureFromClassPath($classPath) {
         $classPath = str_replace('App\\Console\\Commands\\', '', $classPath);
-        $classPath = strtolower($classPath);
+
         $parts = explode('\\', $classPath);
+        $parts = array_map(function($part) {
+            return Str::snake($part, '-');
+        }, $parts);
+
         $name = implode(':', $parts);
 
         return sprintf('%s %s', $name, $this->arguments);
@@ -389,7 +395,7 @@ abstract class Command extends BaseCommand
 
         $service->setCommand($this);
         
-        $name = camel_case($service->getServiceName());
+        $name = Str::camel($service->getServiceName());
 
         if(!isset($this->services[$name])) {
             $this->services[$name] = $service;
@@ -506,7 +512,7 @@ abstract class Command extends BaseCommand
      * @return Service | null
      */
     private function getService($serviceName): ?Service {
-        $service = array_get($this->services, $serviceName, false);
+        $service = Arr::get($this->services, $serviceName, false);
 
         if($service) {
             return $service;
@@ -515,8 +521,8 @@ abstract class Command extends BaseCommand
         return null;
     }
 
-    protected function dump($object, $keys = []) {
-        $handler = new DumpHandler($object, $this, $keys);
+    protected function dump($object, $message = null, $keys = []) {
+        $handler = new DumpHandler($this, $object, $message, $keys);
 
         $handler->render();
     }

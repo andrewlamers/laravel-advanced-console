@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Str;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
@@ -57,11 +58,11 @@ abstract class Service
     }
 
     protected function getDisableOptionName(): string {
-        return strtolower('disable-' . snake_case($this->getServiceName(), '-'));
+        return strtolower('disable-' . Str::snake($this->getServiceName(), '-'));
     }
 
     protected function getEnableOptionName(): string {
-        return strtolower('enable-' . snake_case($this->getServiceName(), '-'));
+        return strtolower('enable-' . Str::snake($this->getServiceName(), '-'));
     }
 
     protected function canDisable(): bool {
@@ -122,7 +123,7 @@ abstract class Service
         }
 
         $output = null;
-        $process = new Process($command, $path);
+        $process = new Process([$command], $path);
         $process->run();
 
         if ($process->isSuccessful()) {
@@ -130,7 +131,7 @@ abstract class Service
         }
 
         if($process->isTerminated()) {
-            return trim($process->getErrorOutput());
+            return 'fatal: ' . trim($process->getErrorOutput());
         }
 
         throw new ProcessFailedException($process);
@@ -226,7 +227,7 @@ abstract class Service
     public function isGitRepo(): bool {
         $result = $this->runProcess('git status');
 
-        if(str_contains($result, 'fatal')) {
+        if(Str::contains($result, 'fatal')) {
             return false;
         }
 

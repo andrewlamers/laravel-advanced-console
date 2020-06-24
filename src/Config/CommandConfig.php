@@ -2,6 +2,7 @@
 namespace Andrewlamers\LaravelAdvancedConsole\Config;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
 
 class CommandConfig {
 
@@ -13,7 +14,7 @@ class CommandConfig {
     }
 
     public function get($key) {
-        return array_get($this->config, $key);
+        return Arr::get($this->config, $key);
     }
 
     public function getConnection() {

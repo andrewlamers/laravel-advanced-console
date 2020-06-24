@@ -75,7 +75,7 @@ class BenchmarkService extends Service
 
     public function formatMs($number): string {
         $ms = $number * 1000;
-        return str_pad($this->formatNumber($ms), 6, '0', STR_PAD_LEFT);
+        return $this->formatNumber($ms);
     }
 
     /**

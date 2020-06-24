@@ -3,6 +3,7 @@
 
 namespace Andrewlamers\LaravelAdvancedConsole\Handlers;
 
+use Andrewlamers\LaravelAdvancedConsole\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -11,14 +12,16 @@ use Illuminate\Support\Arr;
 class DumpHandler
 {
     protected $command;
+    protected $message;
     protected $object;
     protected $config;
     protected $lines = [];
     protected $keys = [];
 
-    public function __construct($object, $command, $keys = null)
+    public function __construct(Command $command, $object, $message = null, $keys = null)
     {
-        $this->command = $command;
+        $this->setCommand($command);
+        $this->message = $message;
         $this->object = $object;
 
         if(is_array($keys)) {
@@ -26,12 +29,15 @@ class DumpHandler
         }
     }
 
+    public function setCommand(Command $command): void {
+        $this->command = $command;
+    }
+
     protected function getConfig($object) {
         $config = config('laravel-advanced-console.dump.' . $this->getClassName($object));
-        $commandConfig = Arr::get($this->command->dumpConfig, $this->getClassName($object));
 
-        if($commandConfig) {
-            return $commandConfig;
+        if($this->command) {
+            $config = Arr::get($this->command->dumpConfig, $this->getClassName($object));
         }
 
         return $config;
@@ -99,8 +105,15 @@ class DumpHandler
             $items[] = '<fg=cyan;bg=default>' . $key . '</>' . ': ' . $value;
         }
 
-        $this->command->linef('<comment>%s</comment>: %s', $this->getClassName($this->object), implode(', ', $items));
+        $items = implode(', ', $items);
+
+        if($this->message) {
+            $this->message .= ' - ';
+        }
+
+        $this->command->linef('<info>%s</info><comment>%s</comment>: %s', $this->message, $this->getClassName($this->object), $items);
     }
+
 
     protected function renderObjectTable() {
         $headers = null;

@@ -54,11 +54,11 @@ class CommandHistoryService extends Service
      */
     public function setOutputCompressed(): void {
         if($this->logOutput() && $this->compressOutput()) {
-            $conn = $this->model->output->getConnection();
+            $conn = $this->getOutput()->getConnection();
             $pdo = $conn->getPdo();
             $table = $this->model->output->getTable();
             $stmt = $pdo->prepare('UPDATE ' . $table . ' SET `output` = COMPRESS(output) WHERE id = ?');
-            if(!$stmt->execute([$this->model->output->id])) {
+            if(!$stmt->execute([$this->getOutput()->id])) {
                 throw new CommandHistoryOutputException('Error setting output compression.');
             }
         }
@@ -74,9 +74,9 @@ class CommandHistoryService extends Service
 
     public function initialize($input, $output): void
     {
-        $this->history = CommandHistory::on(CommandConfig::getConnection());
+       // $this->history = CommandHistory::on(CommandConfig::getConnection());
 
-        $this->model = new CommandHistory($this->getModelAttributes());
+        $this->createModel();
 
         parent::initialize($input, $output);
 
@@ -123,7 +123,19 @@ class CommandHistoryService extends Service
     }
 
     public function getModel() {
+        if(!$this->model) {
+            $this->createModel();
+        }
+
         return $this->model;
+    }
+
+    public function getOutput() {
+        if(!$this->model->output) {
+            $this->createOutput();
+        }
+
+        return $this->getModel()->output;
     }
 
     public function onComplete(): void
@@ -166,13 +178,14 @@ class CommandHistoryService extends Service
 
     public function appendOutput($output): void {
         if($this->logOutput()) {
-            if (!$this->model->output) {
-                $this->createOutput();
-            }
 
             $this->outputBuffer[] = $output;
-            $this->model->output->output = implode("\n", $this->outputBuffer);
+            $this->getOutput()->output = implode("\n", $this->outputBuffer);
         }
+    }
+
+    protected function createModel(): void {
+        $this->model = new CommandHistory($this->getModelAttributes());
     }
 
     protected function createOutput(): void {
@@ -184,7 +197,9 @@ class CommandHistoryService extends Service
 
     public function saveOutput(): void {
         if($this->logOutput()) {
-            $this->model->output->save();
+            if($this->model->output) {
+                $this->model->output->save();
+            }
         }
     }
 
