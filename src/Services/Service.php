@@ -97,6 +97,29 @@ abstract class Service
         $this->application = $application;
     }
 
+    protected function applyCommandTemplate($command) {
+
+        if(!is_array($command)) {
+            $command = [$command];
+        }
+
+        foreach($command as $index => $cmd) {
+            preg_match_all('/\{(?P<function>[a-zA-Z]+)\}/i', $cmd, $matches);
+
+            if ((count($matches) > 0) && isset($matches['function']) && count($matches['function']) > 0) {
+                foreach ($matches['function'] as $function) {
+                    if (method_exists($this, $function)) {
+                        $result = $this->$function();
+                        if (is_string($result) || is_int($result)) {
+                            $command[$index] = str_replace('{' . $function . '}', $result, $cmd);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $command;
+    }
     /**
      * @param      $command
      * @param null $path
@@ -105,25 +128,14 @@ abstract class Service
     protected function runProcess($command, $path = null): string {
         $matches = [];
 
-        preg_match_all('/\{(?P<function>[a-zA-Z]+)\}/i', $command, $matches);
-
-        if((count($matches) > 0) && isset($matches['function']) && count($matches['function']) > 0) {
-            foreach($matches['function'] as $function) {
-                if(method_exists($this, $function)) {
-                    $result = $this->$function();
-                    if(is_string($result) || is_int($result)) {
-                        $command = str_replace('{' . $function . '}', $result, $command);
-                    }
-                }
-            }
-        }
+        $command = $this->applyCommandTemplate($command);
 
         if($path === null) {
             $path = $this->getPath();
         }
 
         $output = null;
-        $process = new Process([$command], $path);
+        $process = new Process($command, $path);
         $process->run();
 
         if ($process->isSuccessful()) {
@@ -225,7 +237,7 @@ abstract class Service
     }
 
     public function isGitRepo(): bool {
-        $result = $this->runProcess('git status');
+        $result = $this->runProcess(['git', 'status']);
 
         if(Str::contains($result, 'fatal')) {
             return false;
@@ -235,31 +247,32 @@ abstract class Service
     }
 
     public function getGitBranch(): string {
-        return $this->runProcess('git rev-parse --abbrev-ref HEAD');
+        return $this->runProcess(['git', 'rev-parse', '--abbrev-ref', 'HEAD']);
     }
 
     public function getGitCommitHash(): string {
-        return $this->runProcess('git log --pretty="%H" -n1 HEAD');
+        return $this->runProcess(['git', 'log', '--pretty="%H"', '-n1', 'HEAD']);
     }
 
     public function getGitCommitDate(): ?string {
         try {
-            return Carbon::parse($this->runProcess('git log --pretty="%ci" -n1 HEAD'))->tz('utc')->format('Y-m-d H:i:s');
+            $date = $this->runProcess(['git', 'log', '--pretty="%ci"', '-n1', 'HEAD']);
+            return Carbon::parse($date)->tz('utc')->format('Y-m-d H:i:s');
         } catch(Exception $e) {
             return null;
         }
     }
 
     public function getGitCommitterName(): string {
-        return $this->runProcess('git log --pretty="%an" -n1 HEAD');
+        return $this->runProcess(['git', 'log', '--pretty="%an"', '-n1', 'HEAD']);
     }
 
     public function getGitCommitterEmail(): string {
-        return $this->runProcess('git log --pretty="%ae" -n1 HEAD');
+        return $this->runProcess(['git', 'log', '--pretty="%ae"', '-n1', 'HEAD']);
     }
 
     public function getGitCommitMessage(): string {
-        return $this->runProcess('git log --pretty="%s" -n1 HEAD');
+        return $this->runProcess(['git', 'log', '--pretty="%s"', '-n1', 'HEAD']);
     }
 
     public function getAppDebug(): string {
