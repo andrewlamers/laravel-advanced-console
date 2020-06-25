@@ -257,7 +257,7 @@ abstract class Service
     public function getGitCommitDate(): ?string {
         try {
             $date = $this->runProcess(['git', 'log', '--pretty="%ci"', '-n1', 'HEAD']);
-            return Carbon::parse($date)->tz('utc')->format('Y-m-d H:i:s');
+            return Carbon::createFromFormat($date, 'Y-m-d H:i:s O')->tz('utc')->format('Y-m-d H:i:s');
         } catch(Exception $e) {
             return null;
         }

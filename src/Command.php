@@ -207,6 +207,7 @@ abstract class Command extends BaseCommand
 
         if($this->commandHistory->isEnabled()) {
             if ($error) {
+                $this->commandHistory->exception = json_encode($error);
                 $this->commandHistory->getModel()->fail();
             }
 
@@ -475,8 +476,8 @@ abstract class Command extends BaseCommand
         $result = 0;
 
         try {
-
             $result = parent::run($input, $output);
+            error_clear_last();
         } catch(\Exception $e) {
             $this->commandHistory->enableMessageCounts(false);
             $this->onException($e);
